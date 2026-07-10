@@ -5,7 +5,7 @@
    Após gravar, dispara "data-changed" para a tela atual se re-renderizar. */
 
 import { store } from "../data/store.js";
-import { esc } from "../ui/dom.js";
+import { esc, formatAno } from "../ui/dom.js";
 import {
   openModal, fieldText, fieldTextarea, fieldSelect, fieldTags,
   hydrateTags, readTags, readValue,
@@ -15,7 +15,6 @@ function avisarMudanca() {
   window.dispatchEvent(new CustomEvent("data-changed"));
 }
 
-const anoAtual = new Date().getFullYear();
 function hojeISO() { return new Date().toISOString().slice(0, 10); }
 function isoParaBR(iso) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
@@ -38,7 +37,7 @@ export async function abrirNovoProjeto(existente = null) {
     bodyHtml: `
       ${fieldText("nome", "Nome do projeto", { required: true, value: p.nome || "", placeholder: "Ex.: Imortais" })}
       <div class="field-2col">
-        ${fieldText("ano", "Ano", { type: "number", value: p.ano ?? anoAtual })}
+        ${fieldText("ano", "Ano", { type: "number", value: p.ano && p.ano !== 1900 ? p.ano : "", placeholder: "Deixe em branco se não souber" })}
         ${fieldSelect("statusProjeto", "Status", listas.statusProjeto, { value: p.statusProjeto || listas.statusProjeto[0]?.valor })}
       </div>
       <div class="field-2col">
@@ -54,7 +53,7 @@ export async function abrirNovoProjeto(existente = null) {
       if (!nome) throw new Error("Informe o nome do projeto.");
       const campos = {
         nome,
-        ano: Number(readValue(form, "ano")) || anoAtual,
+        ano: Number(readValue(form, "ano")) || 1900,
         statusProjeto: readValue(form, "statusProjeto"),
         atividadeAtual: readValue(form, "atividadeAtual"),
         alfred: readValue(form, "alfred"),
@@ -77,7 +76,7 @@ export async function abrirNovaMidia(existente = null) {
     ed ? store.estruturaDaMidia(m.id) : Promise.resolve([]),
   ]);
   projetos.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-  const itens = projetos.map((p) => ({ value: p.id, label: `${p.nome} (${p.ano})` }));
+  const itens = projetos.map((p) => ({ value: p.id, label: `${p.nome} (${formatAno(p.ano)})` }));
   openModal({
     title: ed ? "Editar mídia" : "Nova mídia",
     submitLabel: ed ? "Salvar alterações" : "Criar mídia",
@@ -293,7 +292,7 @@ export async function abrirNovaEstrutura({ projetoIdFixo = null, midiaIdFixo = n
       : projetos;
     return `<div class="field"><label for="f_projetoId">Projeto</label>
       <select id="f_projetoId" name="projetoId">
-        ${lista.map((p) => `<option value="${esc(p.id)}" ${p.id === projetoIdInicial ? "selected" : ""}>${esc(p.nome)} (${esc(p.ano)})</option>`).join("")}
+        ${lista.map((p) => `<option value="${esc(p.id)}" ${p.id === projetoIdInicial ? "selected" : ""}>${esc(p.nome)} (${formatAno(p.ano)})</option>`).join("")}
       </select></div>`;
   })();
 
@@ -357,7 +356,7 @@ export async function abrirNovoHistorico(projetoIdFixo = null, existente = null)
     : `<div class="field"><label for="f_projetoId">Projeto</label>
         <select id="f_projetoId" name="projetoId">
           <option value="">— Geral (sem projeto) —</option>
-          ${projetos.map((p) => `<option value="${esc(p.id)}" ${p.id === projetoSel ? "selected" : ""}>${esc(p.nome)} (${esc(p.ano)})</option>`).join("")}
+          ${projetos.map((p) => `<option value="${esc(p.id)}" ${p.id === projetoSel ? "selected" : ""}>${esc(p.nome)} (${formatAno(p.ano)})</option>`).join("")}
         </select></div>`;
 
   const TIPOS = [
@@ -457,7 +456,7 @@ export async function abrirNovaFita(existente = null) {
           <label for="f_projetoId">Projeto vinculado</label>
           <select id="f_projetoId" name="projetoId">
             <option value="">— Nenhum / não identificado —</option>
-            ${projetos.map((p) => `<option value="${esc(p.id)}" ${p.id === f.projetoId ? "selected" : ""}>${esc(p.nome)} (${esc(p.ano)})</option>`).join("")}
+            ${projetos.map((p) => `<option value="${esc(p.id)}" ${p.id === f.projetoId ? "selected" : ""}>${esc(p.nome)} (${formatAno(p.ano)})</option>`).join("")}
           </select>
         </div>
       </div>
@@ -511,7 +510,7 @@ export async function abrirLoteFitas() {
           <label for="f_projetoId">Projeto vinculado</label>
           <select id="f_projetoId" name="projetoId">
             <option value="">— Nenhum / não identificado —</option>
-            ${projetos.map((p) => `<option value="${esc(p.id)}">${esc(p.nome)} (${esc(p.ano)})</option>`).join("")}
+            ${projetos.map((p) => `<option value="${esc(p.id)}">${esc(p.nome)} (${formatAno(p.ano)})</option>`).join("")}
           </select>
         </div>
       </div>
@@ -556,7 +555,7 @@ export async function abrirNovaDemanda(projetoIdFixo = null, existente = null) {
     : `<div class="field"><label for="f_projetoId">Projeto</label>
         <select id="f_projetoId" name="projetoId">
           <option value="">— Geral (sem projeto) —</option>
-          ${projetos.map((p) => `<option value="${esc(p.id)}" ${p.id === projetoSel ? "selected" : ""}>${esc(p.nome)} (${esc(p.ano)})</option>`).join("")}
+          ${projetos.map((p) => `<option value="${esc(p.id)}" ${p.id === projetoSel ? "selected" : ""}>${esc(p.nome)} (${formatAno(p.ano)})</option>`).join("")}
         </select></div>`;
 
   openModal({

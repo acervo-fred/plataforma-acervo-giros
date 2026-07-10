@@ -3,7 +3,7 @@
    vive no drawer da sidebar (ver app.js). */
 
 import { store } from "../data/store.js";
-import { esc } from "../ui/dom.js";
+import { esc, formatAno } from "../ui/dom.js";
 import { badgeFromLista, corDoValor } from "../ui/badges.js";
 import { abrirNovoProjeto, abrirNovaDemanda } from "./cadastros.js";
 
@@ -104,7 +104,7 @@ function projectCard(p, listas) {
   const nLocais = (p.localizacoes || []).length;
   return `
     <article class="project-card" data-projeto="${esc(p.id)}" style="--card-accent: var(${corvar})">
-      <div class="pc-year">${esc(p.ano)}</div>
+      <div class="pc-year">${esc(formatAno(p.ano))}</div>
       <h3 class="pc-name">${esc(p.nome)}</h3>
       <div class="pc-foot">
         ${badgeFromLista(listas.statusProjeto, p.statusProjeto)}

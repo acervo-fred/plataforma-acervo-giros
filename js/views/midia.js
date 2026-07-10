@@ -3,7 +3,7 @@
    cor do próprio status), e o campo Conteúdo (observações). */
 
 import { store } from "../data/store.js";
-import { esc } from "../ui/dom.js";
+import { esc, formatAno } from "../ui/dom.js";
 import { badgeFromLista, corDoValor } from "../ui/badges.js";
 import { abrirNovaMidia, abrirNovaEstrutura } from "./cadastros.js";
 
@@ -151,7 +151,7 @@ function projetoRow(p, listas) {
   return `<div class="list-row clickable" data-projeto="${esc(p.id)}"
       style="border-left:4px solid var(${corvar})">
     <div class="lr-main">
-      <div class="lr-title">${esc(p.nome)} <span class="muted" style="font-weight:400">· ${esc(p.ano)}</span></div>
+      <div class="lr-title">${esc(p.nome)} <span class="muted" style="font-weight:400">· ${esc(formatAno(p.ano))}</span></div>
       ${p.conteudo ? `<div class="lr-sub">${esc(p.conteudo)}</div>` : ""}
     </div>
     ${badgeFromLista(listas.statusProjeto, p.statusProjeto)}

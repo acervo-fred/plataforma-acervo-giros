@@ -64,7 +64,7 @@ export async function renderFitasLista(app) {
       if (filtroStatus && f.statusFita !== filtroStatus) return false;
       if (t && !(
         (f.codigo || "").toLowerCase().includes(t) ||
-        (f.projetoNome || "").toLowerCase().includes(t) ||
+        nomeProjetoDaFita(f, nomePorId).toLowerCase().includes(t) ||
         (f.localFisico || "").toLowerCase().includes(t) ||
         (f.observacoes || "").toLowerCase().includes(t)
       )) return false;
@@ -99,10 +99,15 @@ export async function renderFitasLista(app) {
   });
 }
 
+// Nome do projeto de uma fita: sempre resolvido pelo projetoId (fonte de verdade).
+// projetoNome é só um cache legado — usado apenas se o projeto vinculado sumiu.
+function nomeProjetoDaFita(f, nomePorId) {
+  if (f.projetoId && nomePorId[f.projetoId]) return nomePorId[f.projetoId];
+  return f.projetoNome || "";
+}
+
 function row(f, listas, nomePorId) {
-  const projeto = f.projetoId && nomePorId[f.projetoId]
-    ? nomePorId[f.projetoId]
-    : f.projetoNome || "";
+  const projeto = nomeProjetoDaFita(f, nomePorId);
   const parts = [f.tipo, f.localFisico, projeto].filter(Boolean).join(" · ");
   return `<div class="list-row fita-row" data-id="${esc(f.id)}">
     <div class="lr-main">

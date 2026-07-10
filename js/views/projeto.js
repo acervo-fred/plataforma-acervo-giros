@@ -3,7 +3,7 @@
    Inclui editar/excluir do projeto e de cada item das listas. */
 
 import { store } from "../data/store.js";
-import { esc } from "../ui/dom.js";
+import { esc, formatAno } from "../ui/dom.js";
 import { badgeFromLista } from "../ui/badges.js";
 import { abrirNovoProjeto, abrirNovaEstrutura, abrirNovoHistorico, abrirNovaDemanda } from "./cadastros.js";
 
@@ -33,7 +33,7 @@ export async function renderProjeto(app, id) {
     <div class="detail-head">
       <div>
         <h1 class="page-title">${esc(projeto.nome)}</h1>
-        <div class="page-sub">${esc(projeto.ano)} · atualizado em ${esc(projeto.ultimaAtualizacao || "—")}</div>
+        <div class="page-sub">${esc(formatAno(projeto.ano))} · atualizado em ${esc(projeto.ultimaAtualizacao || "—")}</div>
       </div>
       <div class="row-end">
         ${badgeFromLista(listas.statusProjeto, projeto.statusProjeto)}
@@ -59,7 +59,7 @@ export async function renderProjeto(app, id) {
       <div class="note"><span class="note-i">ⓘ</span>
         Mídias que contêm este projeto. A lista vem do campo "Projetos armazenados" de cada mídia.</div>
       <div class="list-card" id="midias">
-        ${midias.length ? midias.map((m) => midiaRow(m, listas)).join("")
+        ${midias.length ? midias.map((m) => midiaRow(m, listas, projeto.id)).join("")
           : `<div class="empty">Nenhuma mídia contém este projeto.</div>`}
       </div>
     </section>
@@ -76,14 +76,15 @@ export async function renderProjeto(app, id) {
     </section>
 
     <!-- FITAS -->
-    ${fitas.length ? `<section class="section">
+    <section class="section">
       <div class="section-head"><h2>Fitas</h2></div>
       <div class="note"><span class="note-i">ⓘ</span>
         Fitas (Betacam / Mini DV) vinculadas a este projeto.</div>
       <div class="list-card">
-        ${fitas.map((f) => fitaRow(f, listas)).join("")}
+        ${fitas.length ? fitas.map((f) => fitaRow(f, listas)).join("")
+          : `<div class="empty">Nenhuma fita vinculada a este projeto.</div>`}
       </div>
-    </section>` : ""}
+    </section>
 
     <!-- HISTÓRICO -->
     <section class="section">
@@ -217,12 +218,15 @@ function estruturaRow(e, listas) {
   </div>`;
 }
 
-function midiaRow(m, listas) {
+function midiaRow(m, listas, projetoId) {
   const n = (m.projetosArmazenados || []).length;
+  const resumo = (m.conteudoPorProjeto || {})[projetoId] || "";
   return `<div class="list-row clickable" data-midia="${esc(m.id)}">
     <div class="lr-main">
       <div class="lr-title">${esc(m.nome)} <span class="muted" style="font-weight:400">· ${esc(m.tipo)} · ${esc(m.capacidade)}</span></div>
-      <div class="lr-sub">${n > 1 ? `Contém ${n} projetos` : "Projeto único"}</div>
+      <div class="lr-sub">${resumo
+        ? esc(resumo)
+        : `<span class="muted">${n > 1 ? `Contém ${n} projetos` : "Projeto único"}</span>`}</div>
     </div>
     ${badgeFromLista(listas.statusMidia, m.statusMidia)}
     <span class="muted">›</span>
