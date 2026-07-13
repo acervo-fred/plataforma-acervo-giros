@@ -2,10 +2,12 @@ rules_version = '2';
 
 // ============================================================
 // Regras do Firestore — projeto giros-imagens
+// (compartilhado pela Plataforma Acervo Giros e pelo Catálogo
+// Projetos Giros — coleções isoladas por prefixo, sem colisão)
 // ============================================================
 // ⚠️ TEMPORÁRIAS (fase de desenvolvimento, SEM login).
-// Liberam leitura/escrita SOMENTE nas coleções do acervo, e só
-// até a data de expiração (devAberto). Como o app fica no GitHub
+// Liberam leitura/escrita SOMENTE nas coleções listadas abaixo, e só
+// até a data de expiração (devAberto). Como os apps ficam no GitHub
 // Pages (público) e a apiKey é visível, estas regras NÃO protegem
 // os dados — qualquer pessoa com a URL poderia ler/gravar.
 //
@@ -32,6 +34,9 @@ service cloud.firestore {
     match /acervo_fitas/{document=**}      { allow read, write: if devAberto(); }
     match /acervo_config/{document=**}     { allow read, write: if devAberto(); }
 
+    // Catálogo Projetos Giros — mesmo projeto Firebase, coleção isolada.
+    match /catalogo_projetos/{document=**} { allow read, write: if devAberto(); }
+
     // Nada mais é exposto (RTDB é outro banco e não é afetado por isto).
   }
 }
@@ -52,6 +57,7 @@ service cloud.firestore {
 //     match /acervo_demandas/{document=**}   { allow read, write: if souEu(); }
 //     match /acervo_fitas/{document=**}      { allow read, write: if souEu(); }
 //     match /acervo_config/{document=**}     { allow read, write: if souEu(); }
+//     match /catalogo_projetos/{document=**} { allow read, write: if souEu(); }
 //   }
 // }
 // ============================================================
