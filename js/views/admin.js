@@ -75,7 +75,7 @@ export async function renderAdmin(app) {
   app.querySelector("#btn-export").addEventListener("click", async () => {
     const dados = await store.exportAll();
     const carimbo = new Date().toISOString().slice(0, 10);
-    baixarJSON({ versao: 1, exportadoEm: new Date().toISOString(), ...dados }, `acervo-giros-backup-${carimbo}.json`);
+    baixarJSON({ versao: 1, exportadoEm: new Date().toISOString(), ...dados }, `plataforma-acervo-giros-backup-${carimbo}.json`);
   });
 
   // importar
