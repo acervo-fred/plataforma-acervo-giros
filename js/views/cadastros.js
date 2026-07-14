@@ -187,15 +187,22 @@ export async function abrirNovaMidia(existente = null) {
         row.className = "est-form-row";
         if (id) row.dataset.estId = id;
         row.innerHTML = `
-          <select class="est-proj">${projetoOptsHtml(projetoId)}</select>
-          <input class="est-caminho" type="text" value="${esc(caminho)}" placeholder="Caminho da pasta…">
-          <select class="est-tipo">${tipoOptsHtml(tipoMaterial)}</select>
-          <select class="est-status">${statusOptsHtml(statusPasta)}</select>
-          <button type="button" class="est-del-btn" title="Remover">✕</button>
+          <div class="est-form-row-top">
+            <select class="est-proj">${projetoOptsHtml(projetoId)}</select>
+            <button type="button" class="est-del-btn" title="Remover">✕</button>
+          </div>
+          <input class="est-caminho" type="text" value="${esc(caminho)}" placeholder="Caminho da pasta…" title="${esc(caminho)}">
+          <div class="est-form-row-sub">
+            <select class="est-tipo">${tipoOptsHtml(tipoMaterial)}</select>
+            <select class="est-status">${statusOptsHtml(statusPasta)}</select>
+          </div>
         `;
         row.querySelector(".est-del-btn").addEventListener("click", () => {
           if (id) deletedIds.add(id);
           row.remove();
+        });
+        row.querySelector(".est-caminho").addEventListener("input", (ev) => {
+          ev.target.title = ev.target.value;
         });
         estLista.appendChild(row);
       }

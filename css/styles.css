@@ -700,14 +700,19 @@ a { color: inherit; text-decoration: none; }
 }
 #est-lista:empty { display: none; }
 .est-form-row {
-  display: flex; align-items: center; gap: 5px;
-  padding: 7px 0; border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 9px 0; border-top: 1px solid var(--border);
 }
 .est-form-row:first-child { border-top: none; }
-.est-form-row .est-proj { flex: 0 0 148px; font-size: 11.5px; padding: 4px 6px; }
-.est-form-row .est-caminho { flex: 1; min-width: 0; font-size: 12px; padding: 4px 7px; }
-.est-form-row .est-tipo { flex: 0 0 110px; font-size: 11.5px; padding: 4px 6px; }
-.est-form-row .est-status { flex: 0 0 110px; font-size: 11.5px; padding: 4px 6px; }
+.est-form-row-top { display: flex; align-items: center; gap: 5px; }
+.est-form-row-top .est-proj { flex: 1 1 auto; min-width: 0; font-size: 11.5px; padding: 4px 6px; }
+.est-form-row .est-caminho {
+  width: 100%; font-size: 13px; padding: 6px 8px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+.est-form-row-sub { display: flex; align-items: center; gap: 5px; }
+.est-form-row-sub .est-tipo { flex: 1 1 0; min-width: 0; font-size: 11.5px; padding: 4px 6px; }
+.est-form-row-sub .est-status { flex: 1 1 0; min-width: 0; font-size: 11.5px; padding: 4px 6px; }
 .est-del-btn {
   flex-shrink: 0; background: none; border: none; cursor: pointer;
   color: var(--text-faint); padding: 4px 5px; font-size: 13px; line-height: 1;
