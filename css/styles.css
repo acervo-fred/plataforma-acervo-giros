@@ -101,10 +101,12 @@ a { color: inherit; text-decoration: none; }
 .sg-list {
   display: none; flex-direction: column;
   margin: 0 0 2px 28px; padding: 2px 0;
+  max-height: 255px; overflow-y: auto; scrollbar-width: thin;
 }
 .side-group.open > .sg-list { display: flex; }
 .sg-list a {
   display: block;
+  flex-shrink: 0;
   padding: 5px 10px;
   font-size: 13px; font-weight: 500;
   color: var(--text-soft);
