@@ -17,7 +17,7 @@ import { renderOrganizacao } from "./views/organizacao.js";
 import { renderFitasLista } from "./views/fitas-list.js";
 import { esc } from "./ui/dom.js";
 import { iconClock, iconAlert } from "./ui/icons.js";
-import { abrirNovoHistorico } from "./views/cadastros.js";
+import { abrirNovaDemanda } from "./views/cadastros.js";
 
 const app = document.getElementById("app");
 
@@ -191,4 +191,4 @@ window.addEventListener("data-changed", router);
 ligarDrawer();
 ligarSidebarGrupos();
 router();
-document.getElementById("btn-registro-dia")?.addEventListener("click", () => abrirNovoHistorico());
+document.getElementById("btn-cadastrar-demanda")?.addEventListener("click", () => abrirNovaDemanda());
