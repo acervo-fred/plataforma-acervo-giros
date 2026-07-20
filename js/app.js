@@ -120,15 +120,12 @@ async function atualizarSidebarListas() {
 function ligarSidebarGrupos() {
   document.querySelectorAll(".side-group").forEach((g) => {
     const caretBtn = g.querySelector(".sg-caret-btn");
-    const link = g.querySelector(".side-group-head a");
     if (caretBtn) {
       caretBtn.addEventListener("click", () => g.classList.toggle("open"));
     }
-    if (link) {
-      link.addEventListener("click", () => {
-        if (!g.classList.contains("open")) g.classList.add("open");
-      });
-    }
+    // o link do cabeçalho só navega — quem decide o "aberto" é
+    // marcarSidebarAtivo(), com base na rota atual (fecha sozinho
+    // ao sair da seção, em vez de ficar aberto pra sempre)
   });
 }
 
@@ -138,12 +135,13 @@ function marcarSidebarAtivo() {
     const href = a.getAttribute("href");
     a.classList.toggle("sg-active", href === hash);
   });
-  // auto-expand the group whose page is active
+  // grupo fica aberto só enquanto se está vendo um item dele —
+  // navegar pra qualquer outra tela fecha automaticamente
   const [rota, param] = hash.replace(/^#\//, "").split("/");
   const sgProjetos = document.getElementById("sg-projetos");
   const sgMidias = document.getElementById("sg-midias");
-  if (rota === "projeto" && param) sgProjetos?.classList.add("open");
-  if (rota === "midia" && param) sgMidias?.classList.add("open");
+  sgProjetos?.classList.toggle("open", rota === "projeto" && !!param);
+  sgMidias?.classList.toggle("open", rota === "midia" && !!param);
 }
 
 /* ---------- Drawer "Atividade recente" (sidebar) ---------- */
