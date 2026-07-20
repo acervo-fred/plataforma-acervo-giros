@@ -112,3 +112,52 @@ export const demandas = [
   { id: "d3", projetoId: "p3", pendencia: "Separar material de Mar de Dentro do HD_IMORTAIS_03", prioridade: "Alta", responsavel: "Acervo", status: "Aberta" },
   { id: "d4", projetoId: "p6", pendencia: "Backup dos cartões originais", prioridade: "Baixa", responsavel: "Acervo", status: "Concluída" },
 ];
+
+/* ---------- Organização (herdado do protótipo "Avaliação do Acervo") ---------- */
+
+export const organizacaoGlossario = [
+  { id: "gl1", termo: "Digitalização", descricao: "Conversão de materiais físicos ou analógicos — como fitas e fotografias — em arquivos digitais." },
+  { id: "gl2", termo: "Ingest", descricao: "Transferência e importação de arquivos para um sistema de armazenamento, edição ou gerenciamento. Pode ser de analógico para digital ou entre sistemas digitais." },
+  { id: "gl3", termo: "Metadados", descricao: "Informações que descrevem um arquivo: título, data, autor, duração, formato, palavras-chave e outros atributos que facilitam a identificação e a busca." },
+  { id: "gl4", termo: "Indexação", descricao: "Processo de organizar e catalogar conteúdos para que possam ser localizados com facilidade no futuro." },
+  { id: "gl5", termo: "Servidor", descricao: "Computador dedicado a armazenar, processar e distribuir arquivos ou serviços para outros dispositivos na mesma rede. É ele que gerencia o storage." },
+  { id: "gl6", termo: "Storage", descricao: "Sistema destinado ao armazenamento de grandes volumes de dados digitais — como um conjunto de HDs trabalhando em conjunto." },
+];
+
+// lista fixa de títulos avaliados no protótipo — a prioridade/observação de
+// cada um fica em db.organizacao.prioridades, chaveada pelo próprio título
+export const organizacaoProjetosTitulos = [
+  "7x Bossa Nova","963 Dias","A Revolta dos Malês (longa)",
+  "A Revolta dos Malês (série)","A Voz de Ruy","Acerte o Passo",
+  "Além Mar","Amazônia Eterna","Amazônia: Novas Histórias",
+  "Amazonita","Apenas Meninas","Baile de Máscaras",
+  "Billy e Catarina","Biomas","Boto Fé",
+  "Cale-se","Caminhos da Energia","Cena Nua",
+  "Chapa Quente","Clube Spelunca","Coleções",
+  "Com Causa","Como São Produzidos os Alimentos","Danças Brasileiras – 1ª temporada",
+  "Danças Brasileiras – 2ª temporada","De Mala e Cuia","Debora Colker",
+  "Detetives da História – 1ª temporada","Detetives da História – 2ª temporada","Eldorado",
+  "Ensaios Contemporâneos","Epidemia da Pressa","Escola de Pilotos",
+  "Esse Negócio de Livro","Estilo Brasil – 1ª temporada","Estilo Brasil – 2ª temporada",
+  "Estratégia Xavante","Fafá de Belém / Círio de Nazaré","Fé na Batida – 1ª temporada",
+  "Fé na Batida – 2ª temporada","FIFA 2013 / Final Draw","Fio do Afeto",
+  "Friburgo","Geografia do Movimento","Gerdau",
+  "Gerson King Combo","Graal","Grenal",
+  "Haydeé e o Peixe Voador","História da Gente Brasileira","Homo Brasilis – 1ª temporada",
+  "Homo Brasilis – 2ª temporada","Imortais da Academia","Inconveniências Históricas",
+  "João Havelange","Jungle Pilot","Latitude, Longitude",
+  "Leopoldina – A Imperatriz do Brasil","Lila","Mar à Vista",
+  "Marcadas","Massa Funkeira","Massacre na Escola",
+  "Matizes do Brasil","Meia Lua Inteira","Memorial Brumadinho",
+  "Menino 23","Museu Olímpico / do Amanhã","Natura",
+  "Nazinha, Olhai por Nós","Ninguém Pode Provar Nada","No Caminho do Bem",
+  "Novo Mundo, Pintura de Rua na América Latina","O Debate","O Outro Lado da Moeda",
+  "O Paradoxo da Democracia","O Presidente Improvável","Para Ver Freud",
+  "Projeto Empreender","Pushkin","Queimamufa! – 1ª temporada",
+  "Queimamufa! – 2ª temporada","Recife Sevilha","Rua para Toda a Gula",
+  "Sagrado","Samba na Gamboa","Segue o Sol",
+  "Segue o Som","Segundo Take","Sexa",
+  "Soldados do Araguaia","Sonora","Sua História",
+  "TED","Todo Mundo Atrás da Bola","Todo Mundo é Filho de Santo",
+  "Um Homem Só","Zé do Brasil",
+];

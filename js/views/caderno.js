@@ -10,12 +10,7 @@ export function renderCaderno(app) {
   salvo = salvo || "";
 
   app.innerHTML = `
-    <div class="page-head">
-      <div>
-        <h1 class="page-title">Caderno</h1>
-        <div class="page-sub">Anotações livres — salvas automaticamente neste navegador</div>
-      </div>
-    </div>
+    <div class="page-sub" style="margin-bottom:14px">Anotações livres — salvas automaticamente neste navegador</div>
     <div class="caderno-wrap">
       <div class="caderno-toolbar" id="caderno-tb">
         <button type="button" data-cmd="bold" title="Negrito (Ctrl+B)"><b>N</b></button>

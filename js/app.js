@@ -13,9 +13,10 @@ import { renderDemandasLista } from "./views/demandas-list.js";
 import { renderDashboard } from "./views/dashboard.js";
 import { renderConfig } from "./views/config.js";
 import { renderAdmin } from "./views/admin.js";
-import { renderCaderno } from "./views/caderno.js";
+import { renderOrganizacao } from "./views/organizacao.js";
 import { renderFitasLista } from "./views/fitas-list.js";
 import { esc } from "./ui/dom.js";
+import { iconClock, iconAlert } from "./ui/icons.js";
 import { abrirNovoHistorico } from "./views/cadastros.js";
 
 const app = document.getElementById("app");
@@ -86,9 +87,9 @@ async function router() {
         setActiveNav("fitas");
         await renderFitasLista(app);
         break;
-      case "caderno":
-        setActiveNav("caderno");
-        renderCaderno(app);
+      case "organizacao":
+        setActiveNav("organizacao");
+        await renderOrganizacao(app, param);
         break;
       default:
         placeholder("Página não encontrada", "Verifique o endereço.");
@@ -152,7 +153,7 @@ async function atualizarAtividade() {
   const itens = await store.atividadeRecente(15);
   cont.innerHTML = itens.length
     ? itens.map((a) => {
-        const icon = a.tipo === "demanda" ? "❗" : "🕐";
+        const icon = a.tipo === "demanda" ? iconAlert() : iconClock();
         return `<div class="activity-item" ${a.projetoId ? `data-projeto="${esc(a.projetoId)}"` : ""} style="cursor:${a.projetoId ? "pointer" : "default"}">
           <span class="ai-when">${icon} ${esc(a.quando)}</span>
           <span><span class="ai-proj">${esc(a.projetoNome)}</span> · ${esc(a.texto)}</span>

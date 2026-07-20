@@ -29,6 +29,12 @@ function estadoInicial() {
     demandas: structuredClone(mock.demandas),
     fitas: structuredClone(mock.fitas),
     listas: structuredClone(mock.listas),
+    organizacao: {
+      glossario: structuredClone(mock.organizacaoGlossario),
+      metadadosSugestoes: [],
+      projetosFaltantes: [],
+      prioridades: {}, // { [titulo]: { prioridade, observacao } }
+    },
   };
 }
 
@@ -45,6 +51,14 @@ function carregar() {
 
 const db = carregar();
 if (!db.fitas) db.fitas = [];
+if (!db.organizacao) {
+  db.organizacao = {
+    glossario: structuredClone(mock.organizacaoGlossario),
+    metadadosSugestoes: [],
+    projetosFaltantes: [],
+    prioridades: {},
+  };
+}
 if (!db.listas.tipoFita) db.listas.tipoFita = ["Betacam 30", "Betacam 60", "Mini DV"];
 if (!db.listas.statusFita) db.listas.statusFita = [
   { valor: "Não catalogada", cor: "gray" },
@@ -147,6 +161,45 @@ const mockStore = {
     db.listas[chave] = structuredClone(valores);
     persistir();
     return structuredClone(db.listas[chave]);
+  },
+
+  /* ORGANIZAÇÃO (herdado do "Avaliação do Acervo") */
+  async listGlossario() {
+    return structuredClone(db.organizacao.glossario);
+  },
+  async addGlossarioTermo(termo, descricao) {
+    const novo = { id: novoId("gl"), termo, descricao };
+    db.organizacao.glossario.push(novo);
+    persistir();
+    return structuredClone(novo);
+  },
+  async removeGlossarioTermo(id) { return remover(db.organizacao.glossario, id); },
+
+  async listMetadadosSugestoes() {
+    return structuredClone(db.organizacao.metadadosSugestoes).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  },
+  async addMetadadosSugestao(texto, autor) {
+    const novo = { id: novoId("ms"), texto, autor, ts: Date.now() };
+    db.organizacao.metadadosSugestoes.push(novo);
+    persistir();
+    return structuredClone(novo);
+  },
+
+  async listProjetosFaltantes() {
+    return structuredClone(db.organizacao.projetosFaltantes).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  },
+  async addProjetoFaltante(nome, autor) {
+    const novo = { id: novoId("pf"), nome, autor, ts: Date.now() };
+    db.organizacao.projetosFaltantes.push(novo);
+    persistir();
+    return structuredClone(novo);
+  },
+
+  async getPrioridades() { return structuredClone(db.organizacao.prioridades); },
+  async setPrioridade(titulo, campos) {
+    db.organizacao.prioridades[titulo] = { ...(db.organizacao.prioridades[titulo] || {}), ...campos };
+    persistir();
+    return structuredClone(db.organizacao.prioridades[titulo]);
   },
 
   /* PROJETOS */

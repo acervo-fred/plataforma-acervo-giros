@@ -43,5 +43,8 @@ export const COLLECTIONS = {
   historico: "acervo_historico",
   demandas: "acervo_demandas",
   fitas: "acervo_fitas",
-  config: "acervo_config", // doc "listas" guarda todas as listas editáveis
+  config: "acervo_config", // docs "listas" e "organizacaoPrioridades"
+  organizacaoGlossario: "acervo_organizacaoGlossario",
+  organizacaoMetadados: "acervo_organizacaoMetadados",
+  organizacaoProjetosFaltantes: "acervo_organizacaoProjetosFaltantes",
 };

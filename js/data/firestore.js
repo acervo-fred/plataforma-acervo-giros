@@ -13,7 +13,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import { firebaseConfig, COLLECTIONS } from "../config/firebase-config.js";
-import { listas as listasDefault } from "./mock.js";
+import { listas as listasDefault, organizacaoGlossario as glossarioDefault } from "./mock.js";
 
 const app = initializeApp(firebaseConfig);
 const fdb = getFirestore(app);
@@ -51,6 +51,56 @@ export const firestoreStore = {
     const ref = doc(fdb, COLLECTIONS.config, "listas");
     await setDoc(ref, { [chave]: valores }, { merge: true });
     return valores;
+  },
+
+  /* ORGANIZAÇÃO (herdado do "Avaliação do Acervo") */
+  async listGlossario() {
+    let itens = await allDocs(COLLECTIONS.organizacaoGlossario);
+    if (itens.length === 0) {
+      // semeia os termos padrão uma única vez (coleção ainda vazia)
+      itens = await Promise.all(glossarioDefault.map(async ({ termo, descricao }) => {
+        const ref = await addDoc(collection(fdb, COLLECTIONS.organizacaoGlossario), { termo, descricao });
+        return { id: ref.id, termo, descricao };
+      }));
+    }
+    return itens;
+  },
+  async addGlossarioTermo(termo, descricao) {
+    const ref = await addDoc(collection(fdb, COLLECTIONS.organizacaoGlossario), { termo, descricao });
+    return { id: ref.id, termo, descricao };
+  },
+  async removeGlossarioTermo(id) { await deleteDoc(doc(fdb, COLLECTIONS.organizacaoGlossario, id)); return true; },
+
+  async listMetadadosSugestoes() {
+    const itens = await allDocs(COLLECTIONS.organizacaoMetadados);
+    return itens.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  },
+  async addMetadadosSugestao(texto, autor) {
+    const novo = { texto, autor, ts: Date.now() };
+    const ref = await addDoc(collection(fdb, COLLECTIONS.organizacaoMetadados), novo);
+    return { id: ref.id, ...novo };
+  },
+
+  async listProjetosFaltantes() {
+    const itens = await allDocs(COLLECTIONS.organizacaoProjetosFaltantes);
+    return itens.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  },
+  async addProjetoFaltante(nome, autor) {
+    const novo = { nome, autor, ts: Date.now() };
+    const ref = await addDoc(collection(fdb, COLLECTIONS.organizacaoProjetosFaltantes), novo);
+    return { id: ref.id, ...novo };
+  },
+
+  async getPrioridades() {
+    const ref = doc(fdb, COLLECTIONS.config, "organizacaoPrioridades");
+    const snap = await getDoc(ref);
+    return snap.exists() ? snap.data() : {};
+  },
+  async setPrioridade(titulo, campos) {
+    const ref = doc(fdb, COLLECTIONS.config, "organizacaoPrioridades");
+    const atual = (await getDoc(ref)).data()?.[titulo] || {};
+    await setDoc(ref, { [titulo]: { ...atual, ...campos } }, { merge: true });
+    return { ...atual, ...campos };
   },
 
   /* PROJETOS */
