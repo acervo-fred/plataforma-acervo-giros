@@ -5,7 +5,7 @@
 import { store } from "../data/store.js";
 import { esc, formatAno } from "../ui/dom.js";
 import { badgeFromLista, corDoValor } from "../ui/badges.js";
-import { abrirNovoProjeto, abrirNovaDemanda } from "./cadastros.js";
+import { abrirNovoProjeto } from "./cadastros.js";
 
 // mapa de cor da paleta -> variável CSS do foreground (para a faixa do card)
 const CORVAR = {
@@ -31,7 +31,6 @@ export async function renderHome(app) {
       </div>
       <div class="toolbar">
         <button class="btn btn-primary" data-act="novo-projeto">+ Novo projeto</button>
-        <button class="btn btn-amber" data-act="cadastrar-demanda">+ Cadastrar demanda</button>
       </div>
     </div>
 
@@ -92,7 +91,6 @@ export async function renderHome(app) {
     if (!btn) return;
     const acoes = {
       "novo-projeto": () => abrirNovoProjeto(),
-      "cadastrar-demanda": () => abrirNovaDemanda(),
     };
     acoes[btn.dataset.act]?.();
   });

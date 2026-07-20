@@ -239,6 +239,8 @@ a { color: inherit; text-decoration: none; }
   color: #3a2a00;
 }
 .btn-amber:hover { background: #e69a09; }
+.btn-amber-soft { opacity: 0.8; }
+.btn-amber-soft:hover { opacity: 1; }
 
 .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 
