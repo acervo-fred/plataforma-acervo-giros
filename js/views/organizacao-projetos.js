@@ -78,7 +78,7 @@ export async function renderProjetosPrioridade(cont) {
       <td class="name">${esc(l.titulo)}</td>
       <td class="rating">
         <div style="display:flex;align-items:center;justify-content:center;gap:6px">
-          <span class="badge ${l.prioridade ? "has" : ""}" data-badge>${l.prioridade || "—"}</span>
+          <span class="org-prio-badge ${l.prioridade ? "has" : ""}" data-badge>${l.prioridade || "—"}</span>
           <div class="dot-group" data-dots></div>
         </div>
       </td>

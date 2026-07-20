@@ -34,15 +34,16 @@
   --font-body: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-display: "DM Serif Display", Georgia, serif;
 
-  /* paleta de badges (preenchimento suave + texto mesma família) */
-  --c-gray-bg: #eef0f3;   --c-gray-fg: #3a543a;
-  --c-blue-bg: #e3eeff;   --c-blue-fg: #1565c0;
-  --c-amber-bg: #fff3df;  --c-amber-fg: #b06a00;
-  --c-green-bg: #e4f6ec;  --c-green-fg: #1f8a4c;
-  --c-violet-bg: #f0eafe; --c-violet-fg: #6b3fd1;
-  --c-rose-bg: #ffe9ee;   --c-rose-fg: #c43159;
-  --c-teal-bg: #e1f5f3;   --c-teal-fg: #0f8a82;
-  --c-slate-bg:#e9edf2;   --c-slate-fg:#475569;
+  /* paleta de badges (preenchimento suave + texto mesma família) —
+     tons pastel, mas saturados o bastante pra não sumir no fundo verde-claro */
+  --c-gray-bg: #e2e6e3;   --c-gray-fg: #45564a;
+  --c-blue-bg: #d3e4ff;   --c-blue-fg: #0f52a8;
+  --c-amber-bg: #ffe6b0;  --c-amber-fg: #8f5300;
+  --c-green-bg: #cdf0da;  --c-green-fg: #157a3f;
+  --c-violet-bg: #e3d6fd; --c-violet-fg: #5b2fc2;
+  --c-rose-bg: #ffd3dd;   --c-rose-fg: #ad2350;
+  --c-teal-bg: #c8f0eb;   --c-teal-fg: #0b6b64;
+  --c-slate-bg:#dbe1e8;   --c-slate-fg:#33425a;
 
   /* faixas de prioridade (Organização → Projetos do Acervo) */
   --low: #c62828;
@@ -948,8 +949,8 @@ a { color: inherit; text-decoration: none; }
 .dot-group button.active.high { background: var(--high); }
 .dot-group button.peek { opacity: 0.5; transform: scale(1.15); }
 
-.badge { display: inline-block; width: 24px; font-family: var(--font-display); font-size: 15px; color: var(--text-faint); text-align: right; flex-shrink: 0; }
-.badge.has { color: var(--accent); }
+.org-prio-badge { display: inline-block; width: 24px; font-family: var(--font-display); font-size: 15px; color: var(--text-faint); text-align: right; flex-shrink: 0; }
+.org-prio-badge.has { color: var(--accent); }
 
 .obs-input {
   width: 100%; min-width: 220px; background: var(--surface); border: 1px solid var(--border);
