@@ -10,7 +10,9 @@ import { esc } from "../ui/dom.js";
 import { abrirNovoHistorico } from "./cadastros.js";
 
 export async function renderEquipe(app) {
-  const [listas, historico] = await Promise.all([store.getListas(), store.listHistorico()]);
+  const [listas, historico, observacoes] = await Promise.all([
+    store.getListas(), store.listHistorico(), store.getEquipeObservacoes(),
+  ]);
   const nomes = listas.responsaveis || [];
   let ativo = nomes[0] || "";
 
@@ -37,13 +39,22 @@ export async function renderEquipe(app) {
   function desenhar() {
     const arr = historico.filter((h) => h.responsavel === ativo);
     corpo.innerHTML = `
-      <div class="toolbar" style="margin:16px 0">
+      <div class="field" style="margin-top:16px">
+        <label for="equipe-obs">Observações</label>
+        <textarea id="equipe-obs" rows="3" placeholder="Notas gerais sobre ${esc(ativo)}…">${esc(observacoes[ativo] || "")}</textarea>
+      </div>
+      <div class="toolbar" style="margin-bottom:16px">
         <button class="btn btn-primary" data-act="novo">+ Adicionar projeto</button>
       </div>
       <div class="list-card" id="lista-equipe">
         ${arr.length ? arr.map(row).join("") : `<div class="empty">${esc(ativo)} ainda não tem nada registrado.</div>`}
       </div>
     `;
+
+    corpo.querySelector("#equipe-obs").addEventListener("change", async (e) => {
+      observacoes[ativo] = e.target.value;
+      await store.setEquipeObservacao(ativo, e.target.value);
+    });
 
     const porId = Object.fromEntries(arr.map((h) => [h.id, h]));
     corpo.querySelector('[data-act="novo"]').addEventListener("click", () => abrirNovoHistorico({ responsavelFixo: ativo }));

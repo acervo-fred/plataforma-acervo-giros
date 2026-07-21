@@ -103,6 +103,17 @@ export const firestoreStore = {
     return { ...atual, ...campos };
   },
 
+  async getEquipeObservacoes() {
+    const ref = doc(fdb, COLLECTIONS.config, "equipeObservacoes");
+    const snap = await getDoc(ref);
+    return snap.exists() ? snap.data() : {};
+  },
+  async setEquipeObservacao(nome, texto) {
+    const ref = doc(fdb, COLLECTIONS.config, "equipeObservacoes");
+    await setDoc(ref, { [nome]: texto }, { merge: true });
+    return texto;
+  },
+
   /* PROJETOS */
   async listProjetos() {
     const [projetos, midias, historico] = await Promise.all([

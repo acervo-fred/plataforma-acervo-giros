@@ -29,6 +29,7 @@ function estadoInicial() {
     demandas: structuredClone(mock.demandas),
     fitas: structuredClone(mock.fitas),
     listas: structuredClone(mock.listas),
+    equipeObservacoes: {}, // { [responsavel]: texto }
     organizacao: {
       glossario: structuredClone(mock.organizacaoGlossario),
       metadadosSugestoes: [],
@@ -51,6 +52,7 @@ function carregar() {
 
 const db = carregar();
 if (!db.fitas) db.fitas = [];
+if (!db.equipeObservacoes) db.equipeObservacoes = {};
 if (!db.organizacao) {
   db.organizacao = {
     glossario: structuredClone(mock.organizacaoGlossario),
@@ -200,6 +202,14 @@ const mockStore = {
     db.organizacao.prioridades[titulo] = { ...(db.organizacao.prioridades[titulo] || {}), ...campos };
     persistir();
     return structuredClone(db.organizacao.prioridades[titulo]);
+  },
+
+  /* EQUIPE — observações livres por responsável (aba Equipe) */
+  async getEquipeObservacoes() { return structuredClone(db.equipeObservacoes); },
+  async setEquipeObservacao(nome, texto) {
+    db.equipeObservacoes[nome] = texto;
+    persistir();
+    return texto;
   },
 
   /* PROJETOS */
