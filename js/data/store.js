@@ -338,6 +338,7 @@ const mockStore = {
     const novo = {
       id: novoId("h"),
       projetoId: dados.projetoId,
+      responsavel: dados.responsavel || "",
       periodoTipo: dados.periodoTipo,
       periodo: dados.periodo,
       acao: dados.acao,

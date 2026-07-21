@@ -5,7 +5,7 @@
 import { store } from "../data/store.js";
 import { esc, formatAno } from "../ui/dom.js";
 import { badgeFromLista } from "../ui/badges.js";
-import { abrirNovoProjeto, abrirNovaEstrutura, abrirNovoHistorico, abrirNovaDemanda } from "./cadastros.js";
+import { abrirNovoProjeto, abrirNovaMidia, abrirNovaEstrutura, abrirNovoHistorico, abrirNovaDemanda } from "./cadastros.js";
 
 export async function renderProjeto(app, id) {
   const projeto = await store.getProjeto(id);
@@ -55,7 +55,8 @@ export async function renderProjeto(app, id) {
 
     <!-- MÍDIAS -->
     <section class="section">
-      <div class="section-head"><h2>Mídias</h2></div>
+      <div class="section-head"><h2>Mídias</h2>
+        <button class="btn btn-ghost" data-act="nova-midia">+ Nova mídia</button></div>
       <div class="note"><span class="note-i">ⓘ</span>
         Mídias que contêm este projeto. A lista vem do campo "Projetos armazenados" de cada mídia.</div>
       <div class="list-card" id="midias">
@@ -122,9 +123,10 @@ export async function renderProjeto(app, id) {
       await store.removeProjeto(projeto.id);
       location.hash = "#/";
     },
+    "nova-midia": () => abrirNovaMidia(null, { projetoIdFixo: projeto.id }),
     "nova-pasta": () => abrirNovaEstrutura({ projetoIdFixo: projeto.id }),
     "nova-pasta-grupo": (btn) => abrirNovaEstrutura({ projetoIdFixo: projeto.id, midiaIdFixo: btn.dataset.midia }),
-    "novo-historico": () => abrirNovoHistorico(projeto.id),
+    "novo-historico": () => abrirNovoHistorico({ projetoIdFixo: projeto.id }),
     "nova-demanda": () => abrirNovaDemanda(projeto.id),
   };
   app.querySelectorAll("[data-act]").forEach((btn) =>
@@ -136,7 +138,7 @@ export async function renderProjeto(app, id) {
     (rec) => abrirNovaEstrutura({ projetoIdFixo: projeto.id }, rec),
     (rec) => [`Excluir a pasta "${rec.caminho}"?`, () => store.removeEstrutura(rec.id)]);
   ligaItens(app, "h", historico,
-    (rec) => abrirNovoHistorico(projeto.id, rec),
+    (rec) => abrirNovoHistorico({ projetoIdFixo: projeto.id }, rec),
     (rec) => [`Excluir este registro de histórico (${rec.periodo})?`, () => store.removeHistorico(rec.id)]);
   ligaItens(app, "d", demandas,
     (rec) => abrirNovaDemanda(projeto.id, rec),

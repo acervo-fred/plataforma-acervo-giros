@@ -67,7 +67,7 @@ export async function abrirNovoProjeto(existente = null) {
 }
 
 /* ---------------- Mídia (criar / editar) ---------------- */
-export async function abrirNovaMidia(existente = null) {
+export async function abrirNovaMidia(existente = null, { projetoIdFixo = null } = {}) {
   const ed = !!existente;
   const m = existente || {};
   const [listas, projetos, estruturaExistente] = await Promise.all([
@@ -77,8 +77,10 @@ export async function abrirNovaMidia(existente = null) {
   ]);
   projetos.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
   const itens = projetos.map((p) => ({ value: p.id, label: `${p.nome} (${formatAno(p.ano)})` }));
+  const projetoFixo = !ed && projetoIdFixo ? projetos.find((p) => p.id === projetoIdFixo) : null;
   openModal({
     title: ed ? "Editar mídia" : "Nova mídia",
+    subtitle: projetoFixo ? `Já vinculada a ${projetoFixo.nome}` : "",
     submitLabel: ed ? "Salvar alterações" : "Criar mídia",
     bodyHtml: `
       ${fieldText("nome", "Nome da mídia", { required: true, value: m.nome || "", placeholder: "Ex.: HD_IMORTAIS_03" })}
@@ -106,6 +108,7 @@ export async function abrirNovaMidia(existente = null) {
     onMount: (form) => {
       const lista = form.querySelector("#proj-conteudo-lista");
       const marcados = new Set(m.projetosArmazenados || []);
+      if (projetoFixo) marcados.add(projetoFixo.id);
       const state = { ...(m.conteudoPorProjeto || {}) };
       const estLista = form.querySelector("#est-lista");
       const deletedIds = new Set();
@@ -351,8 +354,9 @@ export async function abrirNovaEstrutura({ projetoIdFixo = null, midiaIdFixo = n
 
 /* ---------------- Histórico (criar / editar) ---------------- */
 // projetoIdFixo: trava o seletor quando vem de dentro de um projeto.
+// responsavelFixo: trava o seletor quando vem de dentro da aba Equipe.
 // existente: registro a editar.
-export async function abrirNovoHistorico(projetoIdFixo = null, existente = null) {
+export async function abrirNovoHistorico({ projetoIdFixo = null, responsavelFixo = null } = {}, existente = null) {
   const [listas, projetos] = await Promise.all([store.getListas(), store.listProjetos()]);
   projetos.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
   const ed = !!existente;
@@ -366,6 +370,15 @@ export async function abrirNovoHistorico(projetoIdFixo = null, existente = null)
           ${projetos.map((p) => `<option value="${esc(p.id)}" ${p.id === projetoSel ? "selected" : ""}>${esc(p.nome)} (${formatAno(p.ano)})</option>`).join("")}
         </select></div>`;
 
+  const responsavelSel = responsavelFixo || h.responsavel || "";
+  const seletorResponsavel = responsavelFixo
+    ? ""
+    : `<div class="field"><label for="f_responsavel">Responsável</label>
+        <select id="f_responsavel" name="responsavel">
+          <option value="">— Sem responsável —</option>
+          ${(listas.responsaveis || []).map((r) => `<option value="${esc(r)}" ${r === responsavelSel ? "selected" : ""}>${esc(r)}</option>`).join("")}
+        </select></div>`;
+
   const TIPOS = [
     { k: "dia", label: "Dia" },
     { k: "intervalo", label: "Intervalo" },
@@ -374,12 +387,17 @@ export async function abrirNovoHistorico(projetoIdFixo = null, existente = null)
   ];
   const tipoInicial = h.periodoTipo || "dia";
 
+  const subtitlePartes = [];
+  if (projetoIdFixo) subtitlePartes.push(projetos.find((p) => p.id === projetoIdFixo)?.nome || "");
+  if (responsavelFixo) subtitlePartes.push(responsavelFixo);
+
   openModal({
     title: ed ? "Editar histórico" : "Novo histórico",
-    subtitle: projetoIdFixo ? `Registro para ${projetos.find((p) => p.id === projetoIdFixo)?.nome || ""}` : "",
+    subtitle: subtitlePartes.length ? `Registro para ${subtitlePartes.join(" · ")}` : "",
     submitLabel: ed ? "Salvar alterações" : "Registrar",
     bodyHtml: `
       ${seletorProjeto}
+      ${seletorResponsavel}
       <div class="field">
         <label>Período</label>
         <div class="segmented" data-seg="periodoTipo">
@@ -425,6 +443,7 @@ export async function abrirNovoHistorico(projetoIdFixo = null, existente = null)
       const data = tipo === "dia" && /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : hojeISO();
       const campos = {
         projetoId: projetoIdFixo || readValue(form, "projetoId"),
+        responsavel: responsavelFixo || readValue(form, "responsavel"),
         periodoTipo: tipo,
         periodo,
         acao: readValue(form, "acao"),

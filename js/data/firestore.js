@@ -226,7 +226,7 @@ export const firestoreStore = {
   },
   async addHistorico(d) {
     const ref = await addDoc(collection(fdb, COLLECTIONS.historico), {
-      projetoId: d.projetoId || "", periodoTipo: d.periodoTipo, periodo: d.periodo,
+      projetoId: d.projetoId || "", responsavel: d.responsavel || "", periodoTipo: d.periodoTipo, periodo: d.periodo,
       acao: d.acao, observacoes: d.observacoes || "", data: d.data,
     });
     return { id: ref.id, ...d };

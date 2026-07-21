@@ -9,7 +9,7 @@ import { renderProjeto } from "./views/projeto.js";
 import { renderMidia } from "./views/midia.js";
 import { renderMidiaPastas } from "./views/midia-pastas.js";
 import { renderMidiasLista } from "./views/midias-list.js";
-import { renderHistoricoLista } from "./views/historico-list.js";
+import { renderEquipe } from "./views/equipe.js";
 import { renderDemandasLista } from "./views/demandas-list.js";
 import { renderDashboard } from "./views/dashboard.js";
 import { renderConfig } from "./views/config.js";
@@ -68,9 +68,9 @@ async function router() {
         setActiveNav("midias");
         await renderMidiaPastas(app, param);
         break;
-      case "historico":
-        setActiveNav("historico");
-        await renderHistoricoLista(app);
+      case "equipe":
+        setActiveNav("equipe");
+        await renderEquipe(app);
         break;
       case "demandas":
         setActiveNav("demandas");
