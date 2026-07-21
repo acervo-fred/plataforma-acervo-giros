@@ -15,6 +15,7 @@ import { renderConfig } from "./views/config.js";
 import { renderAdmin } from "./views/admin.js";
 import { renderOrganizacao } from "./views/organizacao.js";
 import { renderFitasLista } from "./views/fitas-list.js";
+import { renderTesteMidias } from "./views/teste-midias.js";
 import { esc } from "./ui/dom.js";
 import { iconClock, iconAlert } from "./ui/icons.js";
 import { abrirNovaDemanda } from "./views/cadastros.js";
@@ -86,6 +87,10 @@ async function router() {
       case "fitas":
         setActiveNav("fitas");
         await renderFitasLista(app);
+        break;
+      case "teste-midias":
+        setActiveNav("teste-midias");
+        await renderTesteMidias(app);
         break;
       case "organizacao":
         setActiveNav("organizacao");

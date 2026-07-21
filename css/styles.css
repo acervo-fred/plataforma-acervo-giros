@@ -961,3 +961,18 @@ a { color: inherit; text-decoration: none; }
 }
 .obs-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .obs-input::placeholder { color: var(--text-faint); font-style: italic; }
+
+/* ================= TESTE MÍDIAS (aba experimental) ================= */
+.tm-table-wrap { overflow-x: auto; }
+.tm-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.tm-table th, .tm-table td { padding: 8px 12px; text-align: left; vertical-align: middle; }
+.tm-table thead th {
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;
+  color: var(--text-faint); border-bottom: 2px solid var(--border);
+}
+.tm-table tbody tr { border-bottom: 1px solid var(--border); }
+.tm-table tbody tr:last-child { border-bottom: none; }
+.tm-table tbody tr:hover { background: var(--surface-2); }
+.tm-table .tm-check { width: 34px; text-align: center; }
+.tm-table td.tm-path { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; color: var(--text-soft); white-space: nowrap; }
+.tm-table td input.input { width: 100%; }

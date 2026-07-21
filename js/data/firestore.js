@@ -199,6 +199,21 @@ export const firestoreStore = {
   },
   async fitasDoProjeto(projetoId) { return docsWhere(COLLECTIONS.fitas, "projetoId", projetoId); },
 
+  /* TESTE MÍDIAS (aba experimental, isolada das outras coleções) */
+  async listTesteMidias() { return allDocs(COLLECTIONS.testeMidias); },
+  async addTesteMidiasLote(itens) {
+    return Promise.all(itens.map(async (it) => {
+      const dados = {
+        caminho: it.caminho, conteudo: it.conteudo || "", origem: it.origem || "",
+        criadoEm: new Date().toISOString().slice(0, 10),
+      };
+      const ref = await addDoc(collection(fdb, COLLECTIONS.testeMidias), dados);
+      return { id: ref.id, ...dados };
+    }));
+  },
+  async updateTesteMidia(id, campos) { await updateDoc(doc(fdb, COLLECTIONS.testeMidias, id), campos); return { id, ...campos }; },
+  async removeTesteMidia(id) { await deleteDoc(doc(fdb, COLLECTIONS.testeMidias, id)); return true; },
+
   /* ---------- ESCRITA ---------- */
   async addProjeto(d) {
     const ref = await addDoc(collection(fdb, COLLECTIONS.projetos), {

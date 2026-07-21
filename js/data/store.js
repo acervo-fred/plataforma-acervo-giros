@@ -28,6 +28,7 @@ function estadoInicial() {
     historico: structuredClone(mock.historico),
     demandas: structuredClone(mock.demandas),
     fitas: structuredClone(mock.fitas),
+    testeMidias: [],
     listas: structuredClone(mock.listas),
     organizacao: {
       glossario: structuredClone(mock.organizacaoGlossario),
@@ -51,6 +52,7 @@ function carregar() {
 
 const db = carregar();
 if (!db.fitas) db.fitas = [];
+if (!db.testeMidias) db.testeMidias = [];
 if (!db.organizacao) {
   db.organizacao = {
     glossario: structuredClone(mock.organizacaoGlossario),
@@ -287,6 +289,25 @@ const mockStore = {
   async fitasDoProjeto(projetoId) {
     return db.fitas.filter((f) => f.projetoId === projetoId).map((f) => structuredClone(f));
   },
+
+  /* TESTE MÍDIAS (aba experimental, isolada das outras coleções) */
+  async listTesteMidias() {
+    return structuredClone(db.testeMidias);
+  },
+  async addTesteMidiasLote(itens) {
+    const novos = itens.map((it) => ({
+      id: novoId("tm"),
+      caminho: it.caminho,
+      conteudo: it.conteudo || "",
+      origem: it.origem || "",
+      criadoEm: new Date().toISOString().slice(0, 10),
+    }));
+    db.testeMidias.push(...novos);
+    persistir();
+    return novos.map((n) => structuredClone(n));
+  },
+  async updateTesteMidia(id, campos) { return atualizar(db.testeMidias, id, campos); },
+  async removeTesteMidia(id) { return remover(db.testeMidias, id); },
 
   /* ---------- ESCRITA (grava no localStorage) ---------- */
   async addProjeto(dados) {

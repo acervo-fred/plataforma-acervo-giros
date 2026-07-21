@@ -47,4 +47,5 @@ export const COLLECTIONS = {
   organizacaoGlossario: "acervo_organizacaoGlossario",
   organizacaoMetadados: "acervo_organizacaoMetadados",
   organizacaoProjetosFaltantes: "acervo_organizacaoProjetosFaltantes",
+  testeMidias: "acervo_testeMidias", // aba experimental "Teste Mídias" — isolada das outras coleções
 };
