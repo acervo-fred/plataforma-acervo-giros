@@ -1,9 +1,11 @@
 /* Teste Mídias — aba experimental pra testar o cadastro automático de
    pastas. Lê a árvore de pastas de uma mídia externa conectada (via
-   File System Access API, só funciona no Chrome/Edge), deixa marcar
-   quais pastas incluir e escrever o conteúdo de cada uma, e salva
-   numa coleção própria (acervo_testeMidias) — nunca toca em Mídias
-   nem em Estrutura, pra poder validar a ideia sem risco. */
+   File System Access API, só funciona no Chrome/Edge), mostra tudo
+   como uma árvore que abre/fecha (igual Finder) pra deixar clara a
+   relação pasta-mãe/subpasta, deixa marcar quais incluir e escrever
+   o conteúdo de cada uma, e salva numa coleção própria
+   (acervo_testeMidias) — nunca toca em Mídias nem em Estrutura, pra
+   poder validar a ideia sem risco. */
 
 import { store } from "../data/store.js";
 import { esc } from "../ui/dom.js";
@@ -18,25 +20,81 @@ function suportado() {
   return typeof window.showDirectoryPicker === "function";
 }
 
+function novoNo(nome, caminho) {
+  return { nome, caminho, filhos: [], incluir: false, conteudo: "", aberto: false };
+}
+
 // varre recursivamente, ignorando pastas ocultas/de sistema; para de
 // descer quando bate o limite (evita travar em HDs com muitos níveis)
-async function escanear(dirHandle, prefixo, out) {
-  if (out.length >= LIMITE_PASTAS) return;
+async function escanearArvore(dirHandle, no, mapaNos, contador) {
+  if (contador.n >= LIMITE_PASTAS) return;
+  const entradas = [];
   for await (const handle of dirHandle.values()) {
     if (handle.kind !== "directory") continue;
     if (handle.name.startsWith(".") || IGNORAR.has(handle.name)) continue;
-    const caminho = `${prefixo}/${handle.name}`;
-    out.push(caminho);
-    if (out.length >= LIMITE_PASTAS) return;
-    await escanear(handle, caminho, out);
+    entradas.push(handle);
   }
+  entradas.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  for (const handle of entradas) {
+    if (contador.n >= LIMITE_PASTAS) break;
+    const filho = novoNo(handle.name, `${no.caminho}/${handle.name}`);
+    no.filhos.push(filho);
+    mapaNos.set(filho.caminho, filho);
+    contador.n++;
+    await escanearArvore(handle, filho, mapaNos, contador);
+  }
+}
+
+function marcarRecursivo(no, valor) {
+  no.incluir = valor;
+  no.filhos.forEach((f) => marcarRecursivo(f, valor));
+}
+
+function coletarMarcados(no, out) {
+  if (no.incluir) out.push(no);
+  no.filhos.forEach((f) => coletarMarcados(f, out));
+}
+
+// some com quem já foi salvo, mantendo o resto da árvore intacto
+function podarMarcados(no) {
+  no.filhos = no.filhos.filter((f) => {
+    if (f.incluir) return false;
+    podarMarcados(f);
+    return true;
+  });
+}
+
+function reconstruirMapa(no, mapa) {
+  mapa.set(no.caminho, no);
+  no.filhos.forEach((f) => reconstruirMapa(f, mapa));
+  return mapa;
+}
+
+// filtro por texto: um nó fica visível se o caminho dele bate com o
+// termo OU algum descendente bate — e nesse 2º caso força a abertura
+// (sem alterar o "aberto" manual) só pra revelar quem deu match
+function calcularVisibilidade(no, termo) {
+  const nomeMatch = no.caminho.toLowerCase().includes(termo);
+  let filhoVisivel = false;
+  for (const f of no.filhos) {
+    if (calcularVisibilidade(f, termo)) filhoVisivel = true;
+  }
+  no._visivel = nomeMatch || filhoVisivel;
+  no._forcarAberto = filhoVisivel;
+  return no._visivel;
+}
+function limparVisibilidade(no) {
+  no._visivel = true;
+  no._forcarAberto = false;
+  no.filhos.forEach(limparVisibilidade);
 }
 
 export async function renderTesteMidias(app) {
   const salvas = await store.listTesteMidias();
 
-  let encontradas = []; // [{ caminho, incluir, conteudo }]
-  let buscaEncontradas = "";
+  let raiz = null;
+  let mapaNos = new Map();
+  let buscaArvore = "";
   let raizAtual = "";
 
   app.innerHTML = `
@@ -99,114 +157,133 @@ export async function renderTesteMidias(app) {
       return; // cancelado pelo usuário
     }
     raizAtual = dirHandle.name;
-    encontradas = [];
-    buscaEncontradas = "";
+    buscaArvore = "";
     areaScan.innerHTML = `<div class="empty">Lendo pastas…</div>`;
 
-    const caminhos = [dirHandle.name];
-    await escanear(dirHandle, dirHandle.name, caminhos);
-    encontradas = caminhos
-      .sort((a, b) => a.localeCompare(b, "pt-BR"))
-      .map((caminho) => ({ caminho, incluir: false, conteudo: "" }));
-    desenharScanShell();
+    raiz = novoNo(dirHandle.name, dirHandle.name);
+    raiz.aberto = true;
+    mapaNos = new Map([[raiz.caminho, raiz]]);
+    const contador = { n: 1 };
+    await escanearArvore(dirHandle, raiz, mapaNos, contador);
+    desenharShell();
   });
 
-  function filtrarEncontradas() {
-    const termo = buscaEncontradas.trim().toLowerCase();
-    return termo ? encontradas.filter((f) => f.caminho.toLowerCase().includes(termo)) : encontradas;
-  }
-
-  function desenharScanShell() {
-    if (!encontradas.length) { areaScan.innerHTML = ""; return; }
-    const truncado = encontradas.length >= LIMITE_PASTAS;
+  function desenharShell() {
+    if (!raiz) { areaScan.innerHTML = ""; return; }
 
     areaScan.innerHTML = `
-      <div class="section-head"><h2>Pastas encontradas em "${esc(raizAtual)}" (${encontradas.length})</h2></div>
-      ${truncado ? `<div class="note"><span class="note-i">ⓘ</span> Muitas pastas — mostrando só as ${LIMITE_PASTAS} primeiras.</div>` : ""}
-      <div class="toolbar" style="margin-bottom:10px; gap:10px">
-        <input class="input" id="busca-encontradas" type="search" placeholder="Filtrar caminhos…" style="flex:1;min-width:200px" />
+      <div class="section-head"><h2 id="tm-titulo"></h2></div>
+      <div class="note" id="tm-aviso-truncado" style="display:none"><span class="note-i">ⓘ</span> Muitas pastas — mostrando só as ${LIMITE_PASTAS} primeiras.</div>
+      <div class="toolbar" style="margin-bottom:10px; gap:14px">
+        <input class="input" id="busca-arvore" type="search" placeholder="Filtrar caminhos…" style="flex:1;min-width:200px" />
+        <label class="tm-marcar-todas-lbl"><input type="checkbox" id="tm-marcar-todas" /> Marcar tudo</label>
         <span class="muted" id="contagem-marcadas" style="font-size:12.5px"></span>
       </div>
-      <div class="tm-table-wrap">
-        <table class="tm-table">
-          <thead><tr>
-            <th class="tm-check"><input type="checkbox" id="tm-marcar-todas" title="Marcar/desmarcar visíveis" /></th>
-            <th>Caminho</th>
-            <th>Conteúdo da pasta</th>
-          </tr></thead>
-          <tbody id="tm-body"></tbody>
-        </table>
-      </div>
+      <div class="tm-tree" id="tm-tree"></div>
       <div class="toolbar" style="margin-top:12px">
         <button class="btn btn-primary" id="btn-salvar-marcadas" disabled>Salvar pastas marcadas</button>
       </div>
     `;
-    desenharLinhasScan();
 
-    areaScan.querySelector("#busca-encontradas").addEventListener("input", (e) => {
-      buscaEncontradas = e.target.value;
-      desenharLinhasScan();
+    areaScan.querySelector("#busca-arvore").addEventListener("input", (e) => {
+      buscaArvore = e.target.value;
+      redesenharTree();
     });
     areaScan.querySelector("#tm-marcar-todas").addEventListener("change", (e) => {
-      filtrarEncontradas().forEach((f) => { f.incluir = e.target.checked; });
-      desenharLinhasScan();
+      marcarRecursivo(raiz, e.target.checked);
+      redesenharTree();
     });
     areaScan.querySelector("#btn-salvar-marcadas").addEventListener("click", salvarMarcadas);
+
+    const treeEl = areaScan.querySelector("#tm-tree");
+    treeEl.addEventListener("click", (e) => {
+      const caret = e.target.closest("[data-toggle]");
+      if (!caret) return;
+      const no = mapaNos.get(caret.dataset.toggle);
+      if (!no || !no.filhos.length) return;
+      no.aberto = !no.aberto;
+      const noEl = caret.closest(".tm-node");
+      const filhosEl = noEl.querySelector(":scope > .tm-node-filhos");
+      if (filhosEl) filhosEl.style.display = no.aberto ? "" : "none";
+      caret.textContent = no.aberto ? "▾" : "▸";
+    });
+    treeEl.addEventListener("change", (e) => {
+      const cb = e.target.closest("[data-incluir]");
+      if (!cb) return;
+      const no = mapaNos.get(cb.dataset.incluir);
+      if (no) no.incluir = cb.checked;
+      atualizarContagem();
+    });
+    treeEl.addEventListener("input", (e) => {
+      const inp = e.target.closest("[data-conteudo]");
+      if (!inp) return;
+      const no = mapaNos.get(inp.dataset.conteudo);
+      if (no) no.conteudo = inp.value;
+    });
+
+    redesenharTree();
   }
 
-  function desenharLinhasScan() {
-    const body = areaScan.querySelector("#tm-body");
-    const visiveis = filtrarEncontradas();
-    body.innerHTML = visiveis.length
-      ? visiveis.map((f) => rowScan(f)).join("")
-      : `<tr><td colspan="3" class="empty">Nenhum caminho corresponde ao filtro.</td></tr>`;
+  function redesenharTree() {
+    const total = mapaNos.size;
+    const truncado = total >= LIMITE_PASTAS;
+    areaScan.querySelector("#tm-titulo").textContent = `Pastas encontradas em "${raizAtual}" (${total})`;
+    areaScan.querySelector("#tm-aviso-truncado").style.display = truncado ? "flex" : "none";
 
-    body.querySelectorAll("[data-incluir]").forEach((cb) => {
-      cb.addEventListener("change", (e) => {
-        const f = encontradas.find((x) => x.caminho === cb.dataset.incluir);
-        if (f) f.incluir = e.target.checked;
-        atualizarContagem();
-      });
-    });
-    body.querySelectorAll("[data-conteudo]").forEach((inp) => {
-      inp.addEventListener("input", (e) => {
-        const f = encontradas.find((x) => x.caminho === inp.dataset.conteudo);
-        if (f) f.conteudo = e.target.value;
-      });
-    });
+    const termo = buscaArvore.trim().toLowerCase();
+    if (termo) calcularVisibilidade(raiz, termo);
+    else limparVisibilidade(raiz);
+
+    areaScan.querySelector("#tm-tree").innerHTML = renderNo(raiz, 0, !!termo);
     atualizarContagem();
   }
 
   function atualizarContagem() {
+    const out = [];
+    if (raiz) coletarMarcados(raiz, out);
     const span = areaScan.querySelector("#contagem-marcadas");
     const btn = areaScan.querySelector("#btn-salvar-marcadas");
-    const n = encontradas.filter((f) => f.incluir).length;
-    if (span) span.textContent = n ? `${n} marcada${n > 1 ? "s" : ""}` : "";
-    if (btn) btn.disabled = n === 0;
+    if (span) span.textContent = out.length ? `${out.length} marcada${out.length > 1 ? "s" : ""}` : "";
+    if (btn) btn.disabled = out.length === 0;
   }
 
   async function salvarMarcadas() {
-    const marcadas = encontradas.filter((f) => f.incluir);
+    const marcadas = [];
+    coletarMarcados(raiz, marcadas);
     if (!marcadas.length) return;
     const btn = areaScan.querySelector("#btn-salvar-marcadas");
     btn.disabled = true;
     btn.textContent = "Salvando…";
     const novas = await store.addTesteMidiasLote(
-      marcadas.map((f) => ({ caminho: f.caminho, conteudo: f.conteudo, origem: raizAtual }))
+      marcadas.map((no) => ({ caminho: no.caminho, conteudo: no.conteudo, origem: raizAtual }))
     );
     salvas.push(...novas);
     desenharSalvas();
-    encontradas = encontradas.filter((f) => !f.incluir);
-    desenharScanShell();
+
+    raiz.incluir = false; // a raiz não some da árvore, só desmarca
+    podarMarcados(raiz);
+    mapaNos = reconstruirMapa(raiz, new Map());
+    btn.textContent = "Salvar pastas marcadas";
+    redesenharTree();
   }
 }
 
-function rowScan(f) {
-  return `<tr>
-    <td class="tm-check"><input type="checkbox" data-incluir="${esc(f.caminho)}" ${f.incluir ? "checked" : ""} /></td>
-    <td class="tm-path">${esc(f.caminho)}</td>
-    <td><input type="text" class="input" data-conteudo="${esc(f.caminho)}" value="${esc(f.conteudo)}" placeholder="Ex.: Diárias D01 a D22" /></td>
-  </tr>`;
+function renderNo(no, profundidade, filtrando) {
+  if (filtrando && !no._visivel) return "";
+  const temFilhos = no.filhos.length > 0;
+  const abertoEfetivo = filtrando ? (no.aberto || no._forcarAberto) : no.aberto;
+  const indent = profundidade * 20;
+
+  return `<div class="tm-node" data-caminho="${esc(no.caminho)}">
+    <div class="tm-node-row" style="padding-left:${indent}px">
+      <button type="button" class="tm-caret${temFilhos ? "" : " tm-caret--vazio"}" data-toggle="${esc(no.caminho)}" ${temFilhos ? "" : "tabindex=\"-1\""}>${temFilhos ? (abertoEfetivo ? "▾" : "▸") : ""}</button>
+      <input type="checkbox" data-incluir="${esc(no.caminho)}" ${no.incluir ? "checked" : ""} />
+      <svg class="tm-node-ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+      <span class="tm-node-nome" title="${esc(no.caminho)}">${esc(no.nome)}</span>
+      <input type="text" class="input tm-node-conteudo" data-conteudo="${esc(no.caminho)}" value="${esc(no.conteudo)}" placeholder="Conteúdo desta pasta" />
+    </div>
+    ${temFilhos ? `<div class="tm-node-filhos" ${abertoEfetivo ? "" : `style="display:none"`}>${no.filhos.map((f) => renderNo(f, profundidade + 1, filtrando)).join("")}</div>` : ""}
+  </div>`;
 }
 
 function rowSalva(s) {
