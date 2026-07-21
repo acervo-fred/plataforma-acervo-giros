@@ -7,6 +7,7 @@ import { store } from "./data/store.js";
 import { renderHome } from "./views/home.js";
 import { renderProjeto } from "./views/projeto.js";
 import { renderMidia } from "./views/midia.js";
+import { renderMidiaPastas } from "./views/midia-pastas.js";
 import { renderMidiasLista } from "./views/midias-list.js";
 import { renderHistoricoLista } from "./views/historico-list.js";
 import { renderDemandasLista } from "./views/demandas-list.js";
@@ -63,6 +64,10 @@ async function router() {
       case "midia":
         setActiveNav("midias");
         await renderMidia(app, param);
+        break;
+      case "midia-pastas":
+        setActiveNav("midias");
+        await renderMidiaPastas(app, param);
         break;
       case "historico":
         setActiveNav("historico");

@@ -56,8 +56,12 @@ export async function renderMidia(app, id) {
 
     <!-- ESTRUTURA (pastas desta mídia) -->
     <section class="section">
-      <div class="section-head"><h2>Estrutura</h2>
-        <button class="btn btn-ghost" data-act="nova-pasta">+ Nova pasta</button></div>
+      <div class="section-head"><h2>Estrutura das Pastas e Arquivos</h2>
+        <div class="row-end">
+          <a class="btn btn-primary" href="#/midia-pastas/${esc(midia.id)}">Cadastrar pastas</a>
+          <button class="btn btn-ghost" data-act="nova-pasta">+ Nova pasta</button>
+        </div>
+      </div>
       <div class="list-card" id="estrutura">
         ${estrutura.length ? estrutura.map((e) => estruturaRowMidia(e, listas)).join("")
           : `<div class="empty">Nenhuma pasta registrada nesta mídia.</div>`}
