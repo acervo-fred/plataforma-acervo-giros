@@ -58,7 +58,7 @@ export async function renderMidia(app, id) {
     <section class="section">
       <div class="section-head"><h2>Estrutura das Pastas e Arquivos</h2>
         <div class="row-end">
-          <a class="btn btn-primary" href="#/midia-pastas/${esc(midia.id)}">Cadastrar pastas</a>
+          <a class="btn btn-primary" href="#/midia-pastas/${esc(midia.id)}">Importar caminho</a>
           <button class="btn btn-ghost" data-act="nova-pasta">+ Nova pasta</button>
         </div>
       </div>

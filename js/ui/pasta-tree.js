@@ -2,8 +2,8 @@
    conectada (File System Access API, Chrome/Edge) e mostra a árvore
    de subpastas, expansível como no Finder, com checkbox + campo de
    conteúdo por pasta. Módulo genérico: quem chama decide o que fazer
-   com as pastas marcadas via onSalvar — usado tanto em Teste Mídias
-   quanto no cadastro de pastas de uma Mídia real (Estrutura). */
+   com as pastas marcadas via onSalvar — usado no cadastro de pastas
+   de uma Mídia (Estrutura). */
 
 import { esc } from "./dom.js";
 
@@ -42,9 +42,9 @@ async function escanearArvore(dirHandle, no, mapaNos, contador) {
   }
 }
 
-function marcarRecursivo(no, valor) {
-  no.incluir = valor;
-  no.filhos.forEach((f) => marcarRecursivo(f, valor));
+function marcarRecursivo(no, valor, jaCadastrados) {
+  if (!jaCadastrados.has(no.caminho)) no.incluir = valor;
+  no.filhos.forEach((f) => marcarRecursivo(f, valor, jaCadastrados));
 }
 function coletarMarcados(no, out) {
   if (no.incluir) out.push(no);
@@ -83,21 +83,24 @@ function limparVisibilidade(no) {
   no.filhos.forEach(limparVisibilidade);
 }
 
-function renderNo(no, profundidade, filtrando) {
+function renderNo(no, profundidade, filtrando, jaCadastrados) {
   if (filtrando && !no._visivel) return "";
   const temFilhos = no.filhos.length > 0;
   const abertoEfetivo = filtrando ? (no.aberto || no._forcarAberto) : no.aberto;
   const indent = profundidade * 20;
+  const duplicado = jaCadastrados.has(no.caminho);
 
   return `<div class="tm-node" data-caminho="${esc(no.caminho)}">
-    <div class="tm-node-row" style="padding-left:${indent}px">
+    <div class="tm-node-row${duplicado ? " tm-node-row--dup" : ""}" style="padding-left:${indent}px">
       <button type="button" class="tm-caret${temFilhos ? "" : " tm-caret--vazio"}" data-toggle="${esc(no.caminho)}" ${temFilhos ? "" : `tabindex="-1"`}>${temFilhos ? (abertoEfetivo ? "▾" : "▸") : ""}</button>
-      <input type="checkbox" data-incluir="${esc(no.caminho)}" ${no.incluir ? "checked" : ""} />
+      <input type="checkbox" data-incluir="${esc(no.caminho)}" ${no.incluir ? "checked" : ""} ${duplicado ? "disabled" : ""} />
       <svg class="tm-node-ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
       <span class="tm-node-nome" title="${esc(no.caminho)}">${esc(no.nome)}</span>
-      <input type="text" class="input tm-node-conteudo" data-conteudo="${esc(no.caminho)}" value="${esc(no.conteudo)}" placeholder="Conteúdo desta pasta" />
+      ${duplicado
+        ? `<span class="tm-node-dup-tag" title="Já existe na Estrutura desta mídia">já cadastrada</span>`
+        : `<input type="text" class="input tm-node-conteudo" data-conteudo="${esc(no.caminho)}" value="${esc(no.conteudo)}" placeholder="Conteúdo desta pasta" />`}
     </div>
-    ${temFilhos ? `<div class="tm-node-filhos" ${abertoEfetivo ? "" : `style="display:none"`}>${no.filhos.map((f) => renderNo(f, profundidade + 1, filtrando)).join("")}</div>` : ""}
+    ${temFilhos ? `<div class="tm-node-filhos" ${abertoEfetivo ? "" : `style="display:none"`}>${no.filhos.map((f) => renderNo(f, profundidade + 1, filtrando, jaCadastrados)).join("")}</div>` : ""}
   </div>`;
 }
 
@@ -105,22 +108,32 @@ function renderNo(no, profundidade, filtrando) {
    - onSalvar(marcados, raizAtual): recebe os nós marcados
      ([{ caminho, conteudo }]) e faz a gravação; pode ser async. Se
      lançar erro, a árvore não é podada (nada se perde).
+   - caminhosExistentes: array de caminhos já cadastrados — ficam
+     marcados como "já cadastrada" na árvore, com a marcação
+     desabilitada (não dá pra selecionar de novo o mesmo caminho).
    - textoBotaoEscanear / textoBotaoSalvar: rótulos dos botões.
    - onSalvo(qtd, raizAtual): chamado depois de salvar+podar com sucesso. */
 export function montarSeletorPastas(container, opts = {}) {
   const {
     onSalvar,
-    textoBotaoEscanear = "Selecionar pasta da mídia",
+    caminhosExistentes = [],
+    textoBotaoEscanear = "Abrir dispositivo externo",
     textoBotaoSalvar = "Salvar pastas marcadas",
     onSalvo,
   } = opts;
 
+  const jaCadastrados = new Set(caminhosExistentes);
   let raiz = null;
   let mapaNos = new Map();
   let buscaArvore = "";
   let raizAtual = "";
 
   container.innerHTML = `
+    <div class="field" style="max-width:420px">
+      <label for="tm-prefixo">Caminho até aqui (opcional)</label>
+      <input class="input" id="tm-prefixo" type="text" placeholder="Ex.: GIROS_HD_04/PROJETO_X" />
+      <div class="field-hint">Se a pasta que você vai abrir já está dentro de outras (o nome do HD, por exemplo), escreva aqui o caminho anterior — ele entra na frente de tudo que for encontrado.</div>
+    </div>
     <div class="toolbar" style="margin-bottom:14px">
       <button class="btn btn-primary" id="tm-btn-escanear" ${suportaSelecaoPastas() ? "" : "disabled"}>${esc(textoBotaoEscanear)}</button>
     </div>
@@ -137,11 +150,12 @@ export function montarSeletorPastas(container, opts = {}) {
     } catch {
       return; // cancelado pelo usuário
     }
-    raizAtual = dirHandle.name;
+    const prefixo = container.querySelector("#tm-prefixo").value.trim().replace(/\/+$/, "");
+    raizAtual = prefixo ? `${prefixo}/${dirHandle.name}` : dirHandle.name;
     buscaArvore = "";
     area.innerHTML = `<div class="empty">Lendo pastas…</div>`;
 
-    raiz = novoNo(dirHandle.name, dirHandle.name);
+    raiz = novoNo(dirHandle.name, raizAtual);
     raiz.aberto = true;
     mapaNos = new Map([[raiz.caminho, raiz]]);
     const contador = { n: 1 };
@@ -171,7 +185,7 @@ export function montarSeletorPastas(container, opts = {}) {
       redesenharTree();
     });
     area.querySelector("#tm-marcar-todas").addEventListener("change", (e) => {
-      marcarRecursivo(raiz, e.target.checked);
+      marcarRecursivo(raiz, e.target.checked, jaCadastrados);
       redesenharTree();
     });
     area.querySelector("#tm-btn-salvar").addEventListener("click", salvarMarcados);
@@ -190,7 +204,7 @@ export function montarSeletorPastas(container, opts = {}) {
     });
     treeEl.addEventListener("change", (e) => {
       const cb = e.target.closest("[data-incluir]");
-      if (!cb) return;
+      if (!cb || cb.disabled) return;
       const no = mapaNos.get(cb.dataset.incluir);
       if (no) no.incluir = cb.checked;
       atualizarContagem();
@@ -215,7 +229,7 @@ export function montarSeletorPastas(container, opts = {}) {
     if (termo) calcularVisibilidade(raiz, termo);
     else limparVisibilidade(raiz);
 
-    area.querySelector("#tm-tree").innerHTML = renderNo(raiz, 0, !!termo);
+    area.querySelector("#tm-tree").innerHTML = renderNo(raiz, 0, !!termo, jaCadastrados);
     atualizarContagem();
   }
 
@@ -243,6 +257,7 @@ export function montarSeletorPastas(container, opts = {}) {
       throw err;
     }
 
+    marcados.forEach((no) => jaCadastrados.add(no.caminho));
     raiz.incluir = false; // a raiz não some da árvore, só desmarca
     podarMarcados(raiz);
     mapaNos = reconstruirMapa(raiz, new Map());

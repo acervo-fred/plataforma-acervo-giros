@@ -33,7 +33,6 @@ service cloud.firestore {
     match /acervo_demandas/{document=**}   { allow read, write: if devAberto(); }
     match /acervo_fitas/{document=**}      { allow read, write: if devAberto(); }
     match /acervo_config/{document=**}     { allow read, write: if devAberto(); }
-    match /acervo_testeMidias/{document=**} { allow read, write: if devAberto(); } // aba "Teste Mídias" (experimental)
 
     // Organização — herdado do protótipo "Avaliação do Acervo".
     match /acervo_organizacaoGlossario/{document=**}         { allow read, write: if devAberto(); }
@@ -63,7 +62,6 @@ service cloud.firestore {
 //     match /acervo_demandas/{document=**}   { allow read, write: if souEu(); }
 //     match /acervo_fitas/{document=**}      { allow read, write: if souEu(); }
 //     match /acervo_config/{document=**}     { allow read, write: if souEu(); }
-//     match /acervo_testeMidias/{document=**} { allow read, write: if souEu(); }
 //     match /acervo_organizacaoGlossario/{document=**}         { allow read, write: if souEu(); }
 //     match /acervo_organizacaoMetadados/{document=**}         { allow read, write: if souEu(); }
 //     match /acervo_organizacaoProjetosFaltantes/{document=**} { allow read, write: if souEu(); }

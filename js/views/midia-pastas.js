@@ -1,8 +1,10 @@
-/* Cadastrar pastas (dentro de uma Mídia) — escaneia a mídia externa
+/* Importar caminho (dentro de uma Mídia) — escaneia a mídia externa
    conectada e grava direto na Estrutura das Pastas e Arquivos dessa
    mídia. Projeto, tipo de material e status valem para todas as
    pastas marcadas num mesmo lote; dá pra editar cada pasta depois,
-   se precisar de valores diferentes. */
+   se precisar de valores diferentes. Mostra o que já está cadastrado
+   nesta mídia pra evitar redundância — e bloqueia repetir o mesmo
+   caminho (comparado por completo, do nome do HD até a pasta final). */
 
 import { store } from "../data/store.js";
 import { esc, formatAno } from "../ui/dom.js";
@@ -16,9 +18,10 @@ export async function renderMidiaPastas(app, midiaId) {
     return;
   }
 
-  const [listas, projetos] = await Promise.all([
+  const [listas, projetos, estrutura] = await Promise.all([
     store.getListas(),
     store.projetosDaMidia(midiaId),
+    store.estruturaDaMidia(midiaId),
   ]);
   const projetosValidos = projetos.filter((p) => p.existe).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
@@ -27,9 +30,15 @@ export async function renderMidiaPastas(app, midiaId) {
 
     <div class="page-head">
       <div>
-        <h1 class="page-title">Cadastrar pastas</h1>
+        <h1 class="page-title">Importar caminho</h1>
         <div class="page-sub">${esc(midia.nome)} · escaneie a mídia e adicione as pastas direto na Estrutura</div>
       </div>
+    </div>
+
+    <div class="section-head"><h2 id="titulo-cadastradas">Já cadastradas nesta mídia (${estrutura.length})</h2></div>
+    <div class="list-card" id="lista-cadastradas" style="margin-bottom:22px">
+      ${estrutura.length ? estrutura.map((e) => rowCadastrada(e)).join("")
+        : `<div class="empty">Nenhuma pasta cadastrada ainda nesta mídia.</div>`}
     </div>
 
     ${!projetosValidos.length ? `
@@ -62,21 +71,38 @@ export async function renderMidiaPastas(app, midiaId) {
 
   if (!projetosValidos.length) return;
 
+  const listaCadastradas = app.querySelector("#lista-cadastradas");
+  const tituloCadastradas = app.querySelector("#titulo-cadastradas");
+
   montarSeletorPastas(app.querySelector("#area-scan"), {
+    caminhosExistentes: estrutura.map((e) => e.caminho),
     onSalvar: async (marcados) => {
       const projetoId = app.querySelector("#f-projeto").value;
       const tipoMaterial = app.querySelector("#f-tipo").value;
       const statusPasta = app.querySelector("#f-status").value;
-      await Promise.all(marcados.map((no) => store.addEstrutura({
+      const novas = await Promise.all(marcados.map((no) => store.addEstrutura({
         projetoId, midiaId, caminho: no.caminho, tipoMaterial, statusPasta, resumo: no.conteudo,
       })));
+      estrutura.push(...novas);
     },
     textoBotaoSalvar: "Adicionar pastas marcadas à Estrutura",
     onSalvo: (qtd) => {
+      if (listaCadastradas.querySelector(".empty")) listaCadastradas.innerHTML = "";
+      listaCadastradas.innerHTML = estrutura.map((e) => rowCadastrada(e)).join("");
+      tituloCadastradas.textContent = `Já cadastradas nesta mídia (${estrutura.length})`;
       const aviso = document.createElement("div");
       aviso.className = "note";
       aviso.innerHTML = `<span class="note-i">ⓘ</span> ${qtd} pasta${qtd > 1 ? "s" : ""} adicionada${qtd > 1 ? "s" : ""} à Estrutura desta mídia.`;
       app.querySelector("#area-scan").prepend(aviso);
     },
   });
+}
+
+function rowCadastrada(e) {
+  return `<div class="list-row">
+    <div class="lr-main">
+      <div class="lr-title" style="font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12.5px">${esc(e.caminho)}</div>
+      ${e.resumo ? `<div class="lr-sub">${esc(e.resumo)}</div>` : ""}
+    </div>
+  </div>`;
 }
