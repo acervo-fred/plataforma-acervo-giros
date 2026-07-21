@@ -129,11 +129,6 @@ export function montarSeletorPastas(container, opts = {}) {
   let raizAtual = "";
 
   container.innerHTML = `
-    <div class="field" style="max-width:420px">
-      <label for="tm-prefixo">Caminho até aqui (opcional)</label>
-      <input class="input" id="tm-prefixo" type="text" placeholder="Ex.: GIROS_HD_04/PROJETO_X" />
-      <div class="field-hint">Se a pasta que você vai abrir já está dentro de outras (o nome do HD, por exemplo), escreva aqui o caminho anterior — ele entra na frente de tudo que for encontrado.</div>
-    </div>
     <div class="toolbar" style="margin-bottom:14px">
       <button class="btn btn-primary" id="tm-btn-escanear" ${suportaSelecaoPastas() ? "" : "disabled"}>${esc(textoBotaoEscanear)}</button>
     </div>
@@ -150,8 +145,7 @@ export function montarSeletorPastas(container, opts = {}) {
     } catch {
       return; // cancelado pelo usuário
     }
-    const prefixo = container.querySelector("#tm-prefixo").value.trim().replace(/\/+$/, "");
-    raizAtual = prefixo ? `${prefixo}/${dirHandle.name}` : dirHandle.name;
+    raizAtual = dirHandle.name;
     buscaArvore = "";
     area.innerHTML = `<div class="empty">Lendo pastas…</div>`;
 
