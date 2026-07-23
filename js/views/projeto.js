@@ -50,7 +50,7 @@ export async function renderProjeto(app, id) {
         ? `<div class="tags">${projeto.lto.map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>`
         : "—")}
       ${metaCell(
-        `Localizações <span class="loc-total-inline">${midias.length} · ${totalTBTxt} TB</span>`,
+        `Localizações <span class="loc-total-inline">(${midias.length} · ${totalTBTxt} TB)</span>`,
         midias.length
           ? `<div class="loc-list">${[...midias].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map((m) => `
               <div class="loc-list-item">
