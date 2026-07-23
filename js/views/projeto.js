@@ -24,8 +24,9 @@ export async function renderProjeto(app, id) {
     store.fitasDoProjeto(id),
   ]);
 
-  const localizacoes = projeto.localizacoes || [];
   const midiaMap = Object.fromEntries(midias.map((m) => [m.id, m]));
+  const totalTB = midias.reduce((s, m) => s + parseTB(m.capacidade), 0);
+  const totalTBTxt = totalTB ? (Number.isInteger(totalTB) ? totalTB : totalTB.toFixed(1)) : "0";
 
   app.innerHTML = `
     <a class="back-link" href="#/">← Voltar para projetos</a>
@@ -48,9 +49,17 @@ export async function renderProjeto(app, id) {
       ${metaCell("LTO", (projeto.lto || []).length
         ? `<div class="tags">${projeto.lto.map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>`
         : "—")}
-      ${metaCell("Localizações", localizacoes.length
-        ? `<div class="tags">${[...localizacoes].sort((a, b) => a.localeCompare(b, "pt-BR")).map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>`
-        : `<span class="muted">nenhuma mídia</span>`)}
+      ${metaCell(
+        `Localizações <span class="loc-total-inline">${midias.length} · ${totalTBTxt} TB</span>`,
+        midias.length
+          ? `<div class="loc-list">${[...midias].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map((m) => `
+              <div class="loc-list-item">
+                <a href="#/midia/${esc(m.id)}" class="loc-nome" title="${esc(m.nome)}">${esc(m.nome)}</a>
+                <span class="loc-cap">${esc(m.capacidade || "—")}</span>
+              </div>`).join("")}</div>`
+          : `<span class="muted">nenhuma mídia</span>`,
+        "meta-cell--loc"
+      )}
     </div>
 
     <!-- MÍDIAS -->
@@ -162,8 +171,14 @@ function acoesRow(tipo, id) {
   </span>`;
 }
 
-function metaCell(label, valueHtml) {
-  return `<div class="meta-cell">
+// extrai o número de TB de um texto livre de capacidade (ex.: "8 TB", "8TB")
+function parseTB(capacidade) {
+  const m = String(capacidade || "").match(/([\d.,]+)/);
+  return m ? parseFloat(m[1].replace(",", ".")) || 0 : 0;
+}
+
+function metaCell(label, valueHtml, extraClass = "") {
+  return `<div class="meta-cell${extraClass ? ` ${extraClass}` : ""}">
     <div class="meta-label">${label}</div>
     <div class="meta-value">${valueHtml}</div>
   </div>`;

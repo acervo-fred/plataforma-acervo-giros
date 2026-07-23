@@ -396,6 +396,14 @@ a { color: inherit; text-decoration: none; }
 .meta-cell .meta-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); margin-bottom: 4px; }
 .meta-cell .meta-value { font-size: 14.5px; font-weight: 550; }
 
+.meta-cell--loc { grid-column: span 2; }
+.loc-total-inline { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--text-faint); margin-left: 4px; }
+.loc-list { display: flex; flex-wrap: wrap; gap: 4px 20px; }
+.loc-list-item { display: flex; align-items: baseline; gap: 6px; flex: 1 1 160px; font-size: 13.5px; min-width: 0; }
+.loc-list-item .loc-nome { color: var(--accent); font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.loc-list-item .loc-nome:hover { text-decoration: underline; }
+.loc-list-item .loc-cap { color: var(--text-faint); font-size: 12px; flex-shrink: 0; }
+
 .section { margin-bottom: 28px; }
 .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .section-head h2 { font-size: 16px; font-weight: 650; margin: 0; }
