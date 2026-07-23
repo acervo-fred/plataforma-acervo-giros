@@ -401,20 +401,6 @@ a { color: inherit; text-decoration: none; }
 .section-head h2 { font-size: 16px; font-weight: 650; margin: 0; }
 .section-hint { font-size: 12px; font-weight: 400; color: var(--text-faint); margin-left: 8px; }
 
-.meta-cell--loc {
-  grid-column: 1 / -1;
-  border-top: 1px solid var(--border);
-  padding-top: 14px;
-  margin-top: 4px;
-}
-.loc-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
-.loc-total { font-size: 12.5px; color: var(--text-soft); white-space: nowrap; }
-.loc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px 20px; }
-.loc-item { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 13.5px; min-width: 0; }
-.loc-item .loc-nome { font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--accent); }
-.loc-item .loc-nome:hover { text-decoration: underline; }
-.loc-item .loc-cap { color: var(--text-faint); font-size: 12px; flex-shrink: 0; }
-
 .list-card {
   background: var(--surface);
   border: 1px solid var(--border);

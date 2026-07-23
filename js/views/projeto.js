@@ -24,9 +24,8 @@ export async function renderProjeto(app, id) {
     store.fitasDoProjeto(id),
   ]);
 
+  const localizacoes = projeto.localizacoes || [];
   const midiaMap = Object.fromEntries(midias.map((m) => [m.id, m]));
-  const totalTB = midias.reduce((s, m) => s + parseTB(m.capacidade), 0);
-  const totalTBTxt = totalTB ? (Number.isInteger(totalTB) ? totalTB : totalTB.toFixed(1)) : "0";
 
   app.innerHTML = `
     <a class="back-link" href="#/">← Voltar para projetos</a>
@@ -49,18 +48,9 @@ export async function renderProjeto(app, id) {
       ${metaCell("LTO", (projeto.lto || []).length
         ? `<div class="tags">${projeto.lto.map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>`
         : "—")}
-      <div class="meta-cell meta-cell--loc">
-        <div class="loc-head">
-          <span class="meta-label">Localizações</span>
-          <span class="loc-total">${midias.length} mídia${midias.length === 1 ? "" : "s"} · ${totalTBTxt} TB</span>
-        </div>
-        ${midias.length ? `<div class="loc-grid">
-          ${[...midias].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map((m) => `<div class="loc-item">
-            <a href="#/midia/${esc(m.id)}" class="loc-nome" title="${esc(m.nome)}">${esc(m.nome)}</a>
-            <span class="loc-cap">${esc(m.capacidade || "—")}</span>
-          </div>`).join("")}
-        </div>` : `<span class="muted">Nenhuma mídia contém este projeto.</span>`}
-      </div>
+      ${metaCell("Localizações", localizacoes.length
+        ? `<div class="tags">${[...localizacoes].sort((a, b) => a.localeCompare(b, "pt-BR")).map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>`
+        : `<span class="muted">nenhuma mídia</span>`)}
     </div>
 
     <!-- MÍDIAS -->
@@ -170,12 +160,6 @@ function acoesRow(tipo, id) {
     <button class="icon-btn" data-row-act data-edit="${tipo}" data-id="${esc(id)}" title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
     <button class="icon-btn danger" data-row-act data-del="${tipo}" data-id="${esc(id)}" title="Excluir"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
   </span>`;
-}
-
-// extrai o número de TB de um texto livre de capacidade (ex.: "8 TB", "8TB")
-function parseTB(capacidade) {
-  const m = String(capacidade || "").match(/([\d.,]+)/);
-  return m ? parseFloat(m[1].replace(",", ".")) || 0 : 0;
 }
 
 function metaCell(label, valueHtml) {
