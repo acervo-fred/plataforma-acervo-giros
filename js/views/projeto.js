@@ -55,7 +55,7 @@ export async function renderProjeto(app, id) {
           <span class="loc-total">${midias.length} mídia${midias.length === 1 ? "" : "s"} · ${totalTBTxt} TB</span>
         </div>
         ${midias.length ? `<div class="loc-grid">
-          ${midias.map((m) => `<div class="loc-item">
+          ${[...midias].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map((m) => `<div class="loc-item">
             <a href="#/midia/${esc(m.id)}" class="loc-nome" title="${esc(m.nome)}">${esc(m.nome)}</a>
             <span class="loc-cap">${esc(m.capacidade || "—")}</span>
           </div>`).join("")}
