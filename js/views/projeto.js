@@ -25,8 +25,9 @@ export async function renderProjeto(app, id) {
   ]);
 
   const midiaMap = Object.fromEntries(midias.map((m) => [m.id, m]));
-  const totalTB = midias.reduce((s, m) => s + parseTB(m.capacidade), 0);
-  const totalTBTxt = totalTB ? (Number.isInteger(totalTB) ? totalTB : totalTB.toFixed(1)) : "0";
+  const totalTB = midias.filter((m) => m.tipo !== "LTO").reduce((s, m) => s + parseTB(m.capacidade), 0);
+  const totalLTO = midias.filter((m) => m.tipo === "LTO").reduce((s, m) => s + parseTB(m.capacidade), 0);
+  const totalTexto = fmtTB(totalTB) + (totalLTO ? ` + ${fmtTB(totalLTO)} em LTO` : "");
 
   app.innerHTML = `
     <a class="back-link" href="#/">← Voltar para projetos</a>
@@ -50,7 +51,7 @@ export async function renderProjeto(app, id) {
         ? `<div class="tags">${projeto.lto.map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>`
         : "—")}
       ${metaCell(
-        `Localizações <span class="loc-total-inline">(${midias.length} · ${totalTBTxt} TB)</span>`,
+        `Localizações <span class="loc-total-inline">(${midias.length} · ${totalTexto})</span>`,
         midias.length
           ? `<div class="loc-list">${[...midias].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map((m) => `
               <div class="loc-list-item">
@@ -176,6 +177,7 @@ function parseTB(capacidade) {
   const m = String(capacidade || "").match(/([\d.,]+)/);
   return m ? parseFloat(m[1].replace(",", ".")) || 0 : 0;
 }
+function fmtTB(n) { return `${Number.isInteger(n) ? n : n.toFixed(1)} TB`; }
 
 function metaCell(label, valueHtml, extraClass = "") {
   return `<div class="meta-cell${extraClass ? ` ${extraClass}` : ""}">

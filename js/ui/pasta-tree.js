@@ -207,7 +207,15 @@ export function montarSeletorPastas(container, opts = {}) {
       const inp = e.target.closest("[data-conteudo]");
       if (!inp) return;
       const no = mapaNos.get(inp.dataset.conteudo);
-      if (no) no.conteudo = inp.value;
+      if (!no) return;
+      no.conteudo = inp.value;
+      // começar a escrever já marca a pasta, sem precisar clicar no checkbox
+      if (inp.value.trim() && !no.incluir) {
+        no.incluir = true;
+        const cb = inp.closest(".tm-node-row")?.querySelector("[data-incluir]");
+        if (cb) cb.checked = true;
+        atualizarContagem();
+      }
     });
 
     redesenharTree();
