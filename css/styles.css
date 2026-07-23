@@ -401,9 +401,11 @@ a { color: inherit; text-decoration: none; }
 .section-head h2 { font-size: 16px; font-weight: 650; margin: 0; }
 .section-hint { font-size: 12px; font-weight: 400; color: var(--text-faint); margin-left: 8px; }
 
-.loc-card {
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md);
-  padding: 18px; margin-bottom: 24px;
+.meta-cell--loc {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  margin-top: 4px;
 }
 .loc-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
 .loc-total { font-size: 12.5px; color: var(--text-soft); white-space: nowrap; }

@@ -49,20 +49,18 @@ export async function renderProjeto(app, id) {
       ${metaCell("LTO", (projeto.lto || []).length
         ? `<div class="tags">${projeto.lto.map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>`
         : "—")}
-    </div>
-
-    <!-- LOCALIZAÇÕES -->
-    <div class="loc-card">
-      <div class="loc-head">
-        <span class="meta-label">Localizações</span>
-        <span class="loc-total">${midias.length} mídia${midias.length === 1 ? "" : "s"} · ${totalTBTxt} TB</span>
+      <div class="meta-cell meta-cell--loc">
+        <div class="loc-head">
+          <span class="meta-label">Localizações</span>
+          <span class="loc-total">${midias.length} mídia${midias.length === 1 ? "" : "s"} · ${totalTBTxt} TB</span>
+        </div>
+        ${midias.length ? `<div class="loc-grid">
+          ${midias.map((m) => `<div class="loc-item">
+            <a href="#/midia/${esc(m.id)}" class="loc-nome" title="${esc(m.nome)}">${esc(m.nome)}</a>
+            <span class="loc-cap">${esc(m.capacidade || "—")}</span>
+          </div>`).join("")}
+        </div>` : `<span class="muted">Nenhuma mídia contém este projeto.</span>`}
       </div>
-      ${midias.length ? `<div class="loc-grid">
-        ${midias.map((m) => `<div class="loc-item">
-          <a href="#/midia/${esc(m.id)}" class="loc-nome" title="${esc(m.nome)}">${esc(m.nome)}</a>
-          <span class="loc-cap">${esc(m.capacidade || "—")}</span>
-        </div>`).join("")}
-      </div>` : `<span class="muted">Nenhuma mídia contém este projeto.</span>`}
     </div>
 
     <!-- MÍDIAS -->
