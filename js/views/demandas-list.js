@@ -75,9 +75,10 @@ export async function renderDemandasLista(app) {
 }
 
 function row(d, listas) {
-  return `<div class="list-row clickable" data-projeto="${esc(d.projetoId)}">
+  const feita = d.status === "Concluída";
+  return `<div class="list-row clickable${feita ? " list-row--done" : ""}" data-projeto="${esc(d.projetoId)}">
     <div class="lr-main">
-      <div class="lr-title">${esc(d.pendencia)}</div>
+      <div class="lr-title">${feita ? `<span class="done-check" title="Concluída"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>` : ""}${esc(d.pendencia)}</div>
       <div class="lr-sub"><strong>${esc(d.projetoNome)}</strong> · ${esc(d.responsavel || "—")}</div>
     </div>
     <div class="dem-col">${badgeFromLista(listas.prioridade, d.prioridade)}</div>

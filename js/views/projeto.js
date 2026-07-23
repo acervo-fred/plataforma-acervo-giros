@@ -24,8 +24,9 @@ export async function renderProjeto(app, id) {
     store.fitasDoProjeto(id),
   ]);
 
-  const localizacoes = projeto.localizacoes || [];
   const midiaMap = Object.fromEntries(midias.map((m) => [m.id, m]));
+  const totalTB = midias.reduce((s, m) => s + parseTB(m.capacidade), 0);
+  const totalTBTxt = totalTB ? (Number.isInteger(totalTB) ? totalTB : totalTB.toFixed(1)) : "0";
 
   app.innerHTML = `
     <a class="back-link" href="#/">← Voltar para projetos</a>
@@ -48,17 +49,26 @@ export async function renderProjeto(app, id) {
       ${metaCell("LTO", (projeto.lto || []).length
         ? `<div class="tags">${projeto.lto.map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>`
         : "—")}
-      ${metaCell("Localizações", localizacoes.length
-        ? `<div class="tags">${localizacoes.map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>`
-        : `<span class="muted">nenhuma mídia</span>`)}
+    </div>
+
+    <!-- LOCALIZAÇÕES -->
+    <div class="loc-card">
+      <div class="loc-head">
+        <span class="meta-label">Localizações</span>
+        <span class="loc-total">${midias.length} mídia${midias.length === 1 ? "" : "s"} · ${totalTBTxt} TB</span>
+      </div>
+      ${midias.length ? `<div class="loc-grid">
+        ${midias.map((m) => `<div class="loc-item">
+          <a href="#/midia/${esc(m.id)}" class="loc-nome" title="${esc(m.nome)}">${esc(m.nome)}</a>
+          <span class="loc-cap">${esc(m.capacidade || "—")}</span>
+        </div>`).join("")}
+      </div>` : `<span class="muted">Nenhuma mídia contém este projeto.</span>`}
     </div>
 
     <!-- MÍDIAS -->
     <section class="section">
-      <div class="section-head"><h2>Mídias</h2>
+      <div class="section-head"><h2>Mídias <span class="section-hint">mídias que contêm este projeto</span></h2>
         <button class="btn btn-ghost" data-act="nova-midia">+ Nova mídia</button></div>
-      <div class="note"><span class="note-i">ⓘ</span>
-        Mídias que contêm este projeto. A lista vem do campo "Projetos armazenados" de cada mídia.</div>
       <div class="list-card" id="midias">
         ${midias.length ? midias.map((m) => midiaRow(m, listas, projeto.id)).join("")
           : `<div class="empty">Nenhuma mídia contém este projeto.</div>`}
@@ -67,10 +77,8 @@ export async function renderProjeto(app, id) {
 
     <!-- ESTRUTURA (agrupada por mídia) -->
     <section class="section">
-      <div class="section-head"><h2>Estrutura de pastas</h2>
+      <div class="section-head"><h2>Estrutura de pastas <span class="section-hint">pastas de cada mídia deste projeto</span></h2>
         <button class="btn btn-ghost" data-act="nova-pasta">+ Nova pasta</button></div>
-      <div class="note"><span class="note-i">ⓘ</span>
-        Pastas de cada mídia que contém este projeto. Você também pode cadastrá-las direto no formulário da mídia.</div>
       <div id="estrutura-grupos">
         ${estruturaAgrupada(estrutura, midiaMap, listas)}
       </div>
@@ -78,9 +86,7 @@ export async function renderProjeto(app, id) {
 
     <!-- FITAS -->
     <section class="section">
-      <div class="section-head"><h2>Fitas</h2></div>
-      <div class="note"><span class="note-i">ⓘ</span>
-        Fitas (Betacam / Mini DV) vinculadas a este projeto.</div>
+      <div class="section-head"><h2>Fitas <span class="section-hint">fitas vinculadas a este projeto</span></h2></div>
       <div class="list-card">
         ${fitas.length ? fitas.map((f) => fitaRow(f, listas)).join("")
           : `<div class="empty">Nenhuma fita vinculada a este projeto.</div>`}
@@ -168,6 +174,12 @@ function acoesRow(tipo, id) {
   </span>`;
 }
 
+// extrai o número de TB de um texto livre de capacidade (ex.: "8 TB", "8TB")
+function parseTB(capacidade) {
+  const m = String(capacidade || "").match(/([\d.,]+)/);
+  return m ? parseFloat(m[1].replace(",", ".")) || 0 : 0;
+}
+
 function metaCell(label, valueHtml) {
   return `<div class="meta-cell">
     <div class="meta-label">${label}</div>
@@ -246,9 +258,10 @@ function historicoRow(h) {
 }
 
 function demandaRow(d, listas) {
-  return `<div class="list-row">
+  const feita = d.status === "Concluída";
+  return `<div class="list-row${feita ? " list-row--done" : ""}">
     <div class="lr-main">
-      <div class="lr-title">${esc(d.pendencia)}</div>
+      <div class="lr-title">${feita ? `<span class="done-check" title="Concluída"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>` : ""}${esc(d.pendencia)}</div>
       <div class="lr-sub">${esc(d.responsavel || "—")}</div>
     </div>
     ${badgeFromLista(listas.prioridade, d.prioridade)}
