@@ -5,14 +5,9 @@ rules_version = '2';
 // (compartilhado pela Plataforma Acervo Giros e pelo Catálogo
 // Projetos Giros — coleções isoladas por prefixo, sem colisão)
 // ============================================================
-// ⚠️ TEMPORÁRIAS (fase de desenvolvimento, SEM login).
-// Liberam leitura/escrita SOMENTE nas coleções listadas abaixo, e só
-// até a data de expiração (devAberto). Como os apps ficam no GitHub
-// Pages (público) e a apiKey é visível, estas regras NÃO protegem
-// os dados — qualquer pessoa com a URL poderia ler/gravar.
-//
-// ANTES de colocar dados reais, troque pelo bloco "COM LOGIN"
-// mais abaixo (Firebase Auth) e publique de novo.
+// Leitura livre pra todo mundo (o Catálogo é feito pra ser visto
+// por clientes/terceiros sem login). Escrita só pra quem estiver
+// logado com uma das contas Google autorizadas abaixo.
 //
 // Obs.: o Firestore não permite prefixo em path (ex.: acervo_{x}),
 // por isso cada coleção é listada explicitamente.
@@ -21,51 +16,33 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // libera enquanto estiver dentro do prazo de desenvolvimento
-    function devAberto() {
-      return request.time < timestamp.date(2026, 9, 30);
+    function emailAutorizado() {
+      return request.auth != null && request.auth.token.email in [
+        "acervo@girostraffic.page",
+        "gabrielscmiranda@gmail.com",
+        "datamanager@girostraffic.page",
+        "assistente.extra@girostraffic.page",
+        "assistente@giros.com.br",
+        "producao.finalizacao@giros.com.br"
+      ];
     }
 
-    match /acervo_projetos/{document=**}  { allow read, write: if devAberto(); }
-    match /acervo_midias/{document=**}     { allow read, write: if devAberto(); }
-    match /acervo_estrutura/{document=**}  { allow read, write: if devAberto(); }
-    match /acervo_historico/{document=**}  { allow read, write: if devAberto(); }
-    match /acervo_demandas/{document=**}   { allow read, write: if devAberto(); }
-    match /acervo_fitas/{document=**}      { allow read, write: if devAberto(); }
-    match /acervo_config/{document=**}     { allow read, write: if devAberto(); }
+    match /acervo_projetos/{document=**}  { allow read: if true; allow write: if emailAutorizado(); }
+    match /acervo_midias/{document=**}     { allow read: if true; allow write: if emailAutorizado(); }
+    match /acervo_estrutura/{document=**}  { allow read: if true; allow write: if emailAutorizado(); }
+    match /acervo_historico/{document=**}  { allow read: if true; allow write: if emailAutorizado(); }
+    match /acervo_demandas/{document=**}   { allow read: if true; allow write: if emailAutorizado(); }
+    match /acervo_fitas/{document=**}      { allow read: if true; allow write: if emailAutorizado(); }
+    match /acervo_config/{document=**}     { allow read: if true; allow write: if emailAutorizado(); }
 
     // Organização — herdado do protótipo "Avaliação do Acervo".
-    match /acervo_organizacaoGlossario/{document=**}         { allow read, write: if devAberto(); }
-    match /acervo_organizacaoMetadados/{document=**}         { allow read, write: if devAberto(); }
-    match /acervo_organizacaoProjetosFaltantes/{document=**} { allow read, write: if devAberto(); }
+    match /acervo_organizacaoGlossario/{document=**}         { allow read: if true; allow write: if emailAutorizado(); }
+    match /acervo_organizacaoMetadados/{document=**}         { allow read: if true; allow write: if emailAutorizado(); }
+    match /acervo_organizacaoProjetosFaltantes/{document=**} { allow read: if true; allow write: if emailAutorizado(); }
 
     // Catálogo Projetos Giros — mesmo projeto Firebase, coleção isolada.
-    match /catalogo_projetos/{document=**} { allow read, write: if devAberto(); }
+    match /catalogo_projetos/{document=**} { allow read: if true; allow write: if emailAutorizado(); }
 
     // Nada mais é exposto (RTDB é outro banco e não é afetado por isto).
   }
 }
-
-// ============================================================
-// VERSÃO COM LOGIN (usar quando ativarmos o Firebase Auth):
-//
-// service cloud.firestore {
-//   match /databases/{database}/documents {
-//     function souEu() {
-//       return request.auth != null
-//         && request.auth.token.email == "acervo@girostraffic.page";
-//     }
-//     match /acervo_projetos/{document=**}  { allow read, write: if souEu(); }
-//     match /acervo_midias/{document=**}     { allow read, write: if souEu(); }
-//     match /acervo_estrutura/{document=**}  { allow read, write: if souEu(); }
-//     match /acervo_historico/{document=**}  { allow read, write: if souEu(); }
-//     match /acervo_demandas/{document=**}   { allow read, write: if souEu(); }
-//     match /acervo_fitas/{document=**}      { allow read, write: if souEu(); }
-//     match /acervo_config/{document=**}     { allow read, write: if souEu(); }
-//     match /acervo_organizacaoGlossario/{document=**}         { allow read, write: if souEu(); }
-//     match /acervo_organizacaoMetadados/{document=**}         { allow read, write: if souEu(); }
-//     match /acervo_organizacaoProjetosFaltantes/{document=**} { allow read, write: if souEu(); }
-//     match /catalogo_projetos/{document=**} { allow read, write: if souEu(); }
-//   }
-// }
-// ============================================================

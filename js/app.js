@@ -16,9 +16,10 @@ import { renderConfig } from "./views/config.js";
 import { renderAdmin } from "./views/admin.js";
 import { renderOrganizacao } from "./views/organizacao.js";
 import { renderFitasLista } from "./views/fitas-list.js";
-import { esc } from "./ui/dom.js";
+import { esc, toast } from "./ui/dom.js";
 import { iconClock, iconAlert } from "./ui/icons.js";
 import { abrirNovaDemanda } from "./views/cadastros.js";
+import { onAuthChange, loginComGoogle, logout } from "./data/auth.js";
 
 const app = document.getElementById("app");
 
@@ -186,6 +187,42 @@ function ligarDrawer() {
     }
   });
 }
+
+/* ---------- Login (Google) ---------- */
+function renderAuthBox(usuario) {
+  const box = document.getElementById("auth-box");
+  if (!box) return;
+  if (usuario) {
+    box.innerHTML = `<button class="auth-chip" id="btn-logout" title="Sair">
+      ${usuario.photoURL ? `<img src="${esc(usuario.photoURL)}" class="auth-avatar" alt="" />` : ""}
+      <span>${esc(usuario.email)}</span>
+    </button>`;
+    box.querySelector("#btn-logout").addEventListener("click", async () => {
+      if (!confirm("Sair da conta?")) return;
+      await logout();
+    });
+  } else {
+    box.innerHTML = `<button class="btn btn-ghost" id="btn-login">Entrar com Google</button>`;
+    box.querySelector("#btn-login").addEventListener("click", async () => {
+      try {
+        await loginComGoogle();
+      } catch (e) {
+        console.error(e);
+        toast("Não foi possível entrar. Tente de novo.");
+      }
+    });
+  }
+}
+onAuthChange(renderAuthBox);
+
+// avisa quando uma escrita no Firestore falha por falta de login/permissão
+// e ninguém tratou o erro (ex.: botões de excluir, que não passam por modal)
+window.addEventListener("unhandledrejection", (e) => {
+  if (e.reason && e.reason.code === "permission-denied") {
+    toast("Você precisa estar logado com uma conta autorizada para editar.");
+    e.preventDefault();
+  }
+});
 
 window.addEventListener("hashchange", router);
 window.addEventListener("data-changed", router);

@@ -29,3 +29,17 @@ export function html(strings, ...values) {
 export function render(container, htmlString) {
   container.innerHTML = htmlString;
 }
+
+// Aviso rápido no canto da tela (some sozinho) — pra erros que não têm
+// um modal/formulário por perto pra mostrar a mensagem.
+export function toast(msg) {
+  const el = document.createElement("div");
+  el.className = "toast";
+  el.textContent = msg;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add("show"));
+  setTimeout(() => {
+    el.classList.remove("show");
+    setTimeout(() => el.remove(), 250);
+  }, 3500);
+}

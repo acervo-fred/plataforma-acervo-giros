@@ -65,7 +65,9 @@ export function openModal(opts) {
       await onSubmit?.(form);
       close();
     } catch (err) {
-      errBox.textContent = err.message || "Erro ao salvar.";
+      errBox.textContent = err.code === "permission-denied"
+        ? "Você precisa estar logado com uma conta autorizada para editar."
+        : (err.message || "Erro ao salvar.");
       errBox.style.display = "block";
       btn.disabled = false;
     }
