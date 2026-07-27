@@ -39,8 +39,8 @@ export async function renderProjeto(app, id) {
       </div>
       <div class="row-end">
         ${badgeFromLista(listas.statusProjeto, projeto.statusProjeto)}
-        <button class="btn" data-act="editar">Editar</button>
-        <button class="btn btn-ghost" data-act="excluir" title="Excluir projeto"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
+        <button class="btn edit-only" data-act="editar">Editar</button>
+        <button class="btn btn-ghost edit-only" data-act="excluir" title="Excluir projeto"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
       </div>
     </div>
 
@@ -66,7 +66,7 @@ export async function renderProjeto(app, id) {
     <!-- MÍDIAS -->
     <section class="section">
       <div class="section-head"><h2>Mídias <span class="section-hint">mídias que contêm este projeto</span></h2>
-        <button class="btn btn-ghost" data-act="nova-midia">+ Nova mídia</button></div>
+        <button class="btn btn-ghost edit-only" data-act="nova-midia">+ Nova mídia</button></div>
       <div class="list-card" id="midias">
         ${midias.length ? midias.map((m) => midiaRow(m, listas, projeto.id)).join("")
           : `<div class="empty">Nenhuma mídia contém este projeto.</div>`}
@@ -76,7 +76,7 @@ export async function renderProjeto(app, id) {
     <!-- ESTRUTURA (agrupada por mídia) -->
     <section class="section">
       <div class="section-head"><h2>Estrutura de pastas <span class="section-hint">pastas de cada mídia deste projeto</span></h2>
-        <button class="btn btn-ghost" data-act="nova-pasta">+ Nova pasta</button></div>
+        <button class="btn btn-ghost edit-only" data-act="nova-pasta">+ Nova pasta</button></div>
       <div id="estrutura-grupos">
         ${estruturaAgrupada(estrutura, midiaMap, listas)}
       </div>
@@ -94,7 +94,7 @@ export async function renderProjeto(app, id) {
     <!-- HISTÓRICO -->
     <section class="section">
       <div class="section-head"><h2>Histórico</h2>
-        <button class="btn btn-ghost" data-act="novo-historico">+ Novo registro</button></div>
+        <button class="btn btn-ghost edit-only" data-act="novo-historico">+ Novo registro</button></div>
       <div class="list-card">
         ${historico.length ? historico.map((h) => historicoRow(h)).join("")
           : `<div class="empty">Sem histórico.</div>`}
@@ -104,7 +104,7 @@ export async function renderProjeto(app, id) {
     <!-- PENDÊNCIAS -->
     <section class="section">
       <div class="section-head"><h2>Pendências</h2>
-        <button class="btn btn-ghost" data-act="nova-demanda">+ Nova demanda</button></div>
+        <button class="btn btn-ghost edit-only" data-act="nova-demanda">+ Nova demanda</button></div>
       <div class="list-card">
         ${demandas.length ? demandas.map((d) => demandaRow(d, listas)).join("")
           : `<div class="empty">Sem pendências.</div>`}
@@ -166,7 +166,7 @@ function ligaItens(app, tipo, registros, onEdit, onDel) {
 }
 
 function acoesRow(tipo, id) {
-  return `<span class="lr-actions">
+  return `<span class="lr-actions edit-only">
     <button class="icon-btn" data-row-act data-edit="${tipo}" data-id="${esc(id)}" title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
     <button class="icon-btn danger" data-row-act data-del="${tipo}" data-id="${esc(id)}" title="Excluir"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
   </span>`;
@@ -210,7 +210,7 @@ function estruturaAgrupada(estrutura, midiaMap, listas) {
       <div class="est-grupo-head">
         ${midiaRef}
         <span class="est-grupo-count">${n} ${n === 1 ? "pasta" : "pastas"}</span>
-        ${midia ? `<button class="btn btn-ghost est-grupo-add" data-act="nova-pasta-grupo" data-midia="${esc(midiaId)}">+ pasta</button>` : ""}
+        ${midia ? `<button class="btn btn-ghost est-grupo-add edit-only" data-act="nova-pasta-grupo" data-midia="${esc(midiaId)}">+ pasta</button>` : ""}
       </div>
       <div class="list-card">
         ${pastas.map((p) => estruturaRow(p, listas)).join("")}

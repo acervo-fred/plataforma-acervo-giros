@@ -9,7 +9,7 @@ export async function renderGlossario(cont) {
   const termos = await store.listGlossario();
 
   cont.innerHTML = `
-    <div class="toolbar" style="margin-bottom:16px">
+    <div class="toolbar edit-only" style="margin-bottom:16px">
       <button class="btn btn-primary" id="btn-novo-termo">+ Novo termo</button>
     </div>
     <div class="glossario-grid" id="glossario-grid"></div>
@@ -24,7 +24,7 @@ export async function renderGlossario(cont) {
         <div class="glossario-item">
           <div class="gi-head">
             <span class="gi-termo">${esc(t.termo)}</span>
-            <button class="icon-btn danger" data-del="${esc(t.id)}" title="Remover">
+            <button class="icon-btn danger edit-only" data-del="${esc(t.id)}" title="Remover">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             </button>
           </div>

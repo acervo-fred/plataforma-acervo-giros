@@ -9,12 +9,21 @@
 import { store } from "../data/store.js";
 import { esc, formatAno } from "../ui/dom.js";
 import { montarSeletorPastas } from "../ui/pasta-tree.js";
+import { usuarioAtual } from "../data/auth.js";
 
 export async function renderMidiaPastas(app, midiaId) {
   const midia = await store.getMidia(midiaId);
   if (!midia) {
     app.innerHTML = `<a class="back-link" href="#/midias">← Voltar para mídias</a>
       <div class="empty">Mídia não encontrada.</div>`;
+    return;
+  }
+
+  // página inteira é de escrita (importar pastas) — quem chegou aqui
+  // via URL direta sem estar logado como editor não vê o formulário
+  if (!usuarioAtual()) {
+    app.innerHTML = `<a class="back-link" href="#/midia/${esc(midiaId)}">← Voltar para ${esc(midia.nome)}</a>
+      <div class="empty">Esta área é restrita a quem está editando. Entre como editor para importar pastas.</div>`;
     return;
   }
 

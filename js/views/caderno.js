@@ -1,7 +1,10 @@
+import { usuarioAtual } from "../data/auth.js";
+
 const NB_KEY = "acervo-giros-caderno-html";
 const NB_KEY_OLD = "acervo-giros-caderno";
 
 export function renderCaderno(app) {
+  const podeEditar = !!usuarioAtual();
   let salvo = localStorage.getItem(NB_KEY);
   if (!salvo) {
     const old = localStorage.getItem(NB_KEY_OLD);
@@ -12,7 +15,7 @@ export function renderCaderno(app) {
   app.innerHTML = `
     <div class="page-sub" style="margin-bottom:14px">Anotações livres — salvas automaticamente neste navegador</div>
     <div class="caderno-wrap">
-      <div class="caderno-toolbar" id="caderno-tb">
+      <div class="caderno-toolbar edit-only" id="caderno-tb">
         <button type="button" data-cmd="bold" title="Negrito (Ctrl+B)"><b>N</b></button>
         <button type="button" data-cmd="italic" title="Itálico (Ctrl+I)"><i>I</i></button>
         <button type="button" data-cmd="underline" title="Sublinhado (Ctrl+U)"><u>S</u></button>
@@ -25,7 +28,7 @@ export function renderCaderno(app) {
         <button type="button" data-block="h3" title="Subtítulo">t</button>
         <button type="button" data-block="p" title="Parágrafo normal">¶</button>
       </div>
-      <div id="caderno-editor" class="caderno-editor" contenteditable="true">${salvo}</div>
+      <div id="caderno-editor" class="caderno-editor" contenteditable="${podeEditar}">${salvo}</div>
     </div>
   `;
 

@@ -20,6 +20,7 @@ import { esc, toast } from "./ui/dom.js";
 import { iconClock, iconAlert } from "./ui/icons.js";
 import { abrirNovaDemanda } from "./views/cadastros.js";
 import { onAuthChange, loginComGoogle, logout } from "./data/auth.js";
+import { iniciarPortaoAcesso } from "./ui/access-gate.js";
 
 const app = document.getElementById("app");
 
@@ -190,6 +191,11 @@ function ligarDrawer() {
 
 /* ---------- Login (Google) ---------- */
 function renderAuthBox(usuario) {
+  // controla via CSS todo botão/campo marcado com .edit-only (ver
+  // css/styles.css) — registrado cedo o bastante (antes do primeiro
+  // router()) pra já estar certo no primeiro desenho da página
+  document.body.classList.toggle("is-editor", !!usuario);
+
   const box = document.getElementById("auth-box");
   if (!box) return;
   if (usuario) {
@@ -202,7 +208,9 @@ function renderAuthBox(usuario) {
       await logout();
     });
   } else {
-    box.innerHTML = `<button class="btn btn-ghost" id="btn-login">Entrar com Google</button>`;
+    // quem escolheu "Leitor" no portão de entrada ainda pode virar
+    // editor depois, sem precisar recarregar a página
+    box.innerHTML = `<button class="auth-link" id="btn-login">Entrar como editor</button>`;
     box.querySelector("#btn-login").addEventListener("click", async () => {
       try {
         await loginComGoogle();
@@ -230,6 +238,9 @@ window.addEventListener("data-changed", router);
 // type="module" é sempre deferido; o top-level await do store.js faz o
 // DOMContentLoaded disparar antes de app.js terminar — por isso iniciamos
 // diretamente aqui, quando o módulo já resolveu e o DOM está garantidamente pronto.
+// O portão de acesso (Leitor/Editor) cobre a tela inteira até a pessoa
+// escolher — só depois disso a página em si é montada.
+await iniciarPortaoAcesso();
 ligarDrawer();
 ligarSidebarGrupos();
 router();

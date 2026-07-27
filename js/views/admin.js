@@ -5,6 +5,7 @@
 import { store } from "../data/store.js";
 import { USE_FIRESTORE } from "../config/firebase-config.js";
 import * as mock from "../data/mock.js";
+import { usuarioAtual } from "../data/auth.js";
 
 function bundleExemplo() {
   return structuredClone({
@@ -23,6 +24,14 @@ function baixarJSON(obj, nome) {
 }
 
 export async function renderAdmin(app) {
+  // só acessível a partir de Configurações, já restrita — mais essa
+  // trava aqui é só rede de segurança pra quem digitar a URL direto
+  if (!usuarioAtual()) {
+    app.innerHTML = `<a class="back-link" href="#/">← Voltar</a>
+      <div class="empty">Esta área é restrita a quem está editando.</div>`;
+    return;
+  }
+
   const backend = USE_FIRESTORE ? "Firestore (giros-imagens)" : "Local (neste navegador)";
 
   app.innerHTML = `

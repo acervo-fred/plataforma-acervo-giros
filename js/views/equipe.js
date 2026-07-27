@@ -8,11 +8,13 @@
 import { store } from "../data/store.js";
 import { esc } from "../ui/dom.js";
 import { abrirNovoHistorico } from "./cadastros.js";
+import { usuarioAtual } from "../data/auth.js";
 
 export async function renderEquipe(app) {
   const [listas, historico, observacoes] = await Promise.all([
     store.getListas(), store.listHistorico(), store.getEquipeObservacoes(),
   ]);
+  const podeEditar = !!usuarioAtual();
   const nomes = listas.responsaveis || [];
   let ativo = nomes[0] || "";
 
@@ -41,9 +43,9 @@ export async function renderEquipe(app) {
     corpo.innerHTML = `
       <div class="field" style="margin-top:16px">
         <label for="equipe-obs">Observações</label>
-        <textarea id="equipe-obs" rows="3" placeholder="Notas gerais sobre ${esc(ativo)}…">${esc(observacoes[ativo] || "")}</textarea>
+        <textarea id="equipe-obs" rows="3" placeholder="Notas gerais sobre ${esc(ativo)}…" ${podeEditar ? "" : "readonly"}>${esc(observacoes[ativo] || "")}</textarea>
       </div>
-      <div class="toolbar" style="margin-bottom:16px">
+      <div class="toolbar edit-only" style="margin-bottom:16px">
         <button class="btn btn-primary" data-act="novo">+ Adicionar projeto</button>
       </div>
       <div class="list-card" id="lista-equipe">
@@ -87,7 +89,7 @@ function row(h) {
       <div class="lr-title">${esc(h.projetoNome)} <span class="muted" style="font-weight:400">· ${esc(h.periodo)}</span></div>
       <div class="lr-sub">${esc(h.acao)}${h.observacoes ? " · " + esc(h.observacoes) : ""}</div>
     </div>
-    <span class="lr-actions">
+    <span class="lr-actions edit-only">
       <button class="icon-btn" data-edit data-id="${esc(h.id)}" title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
       <button class="icon-btn danger" data-del data-id="${esc(h.id)}" title="Excluir"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
     </span>

@@ -6,10 +6,12 @@
 import { store } from "../data/store.js";
 import { esc } from "../ui/dom.js";
 import { organizacaoProjetosTitulos as TITULOS } from "../data/mock.js";
+import { usuarioAtual } from "../data/auth.js";
 
 function corFaixa(v, s) { return v > s ? "" : s <= 3 ? "low" : s <= 6 ? "mid" : "high"; }
 
 export async function renderProjetosPrioridade(cont) {
+  const podeEditar = !!usuarioAtual();
   const prioridades = await store.getPrioridades();
   let linhas = TITULOS.map((titulo) => ({
     titulo,
@@ -79,10 +81,10 @@ export async function renderProjetosPrioridade(cont) {
       <td class="rating">
         <div style="display:flex;align-items:center;justify-content:center;gap:6px">
           <span class="org-prio-badge ${l.prioridade ? "has" : ""}" data-badge>${l.prioridade || "—"}</span>
-          <div class="dot-group" data-dots></div>
+          <div class="dot-group edit-only-inert" data-dots></div>
         </div>
       </td>
-      <td class="obs"><textarea class="obs-input" rows="1" placeholder="Observações…" data-obs>${esc(l.observacao)}</textarea></td>
+      <td class="obs"><textarea class="obs-input" rows="1" placeholder="Observações…" data-obs ${podeEditar ? "" : "readonly"}>${esc(l.observacao)}</textarea></td>
     </tr>`;
   }
 

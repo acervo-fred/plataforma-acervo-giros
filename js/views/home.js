@@ -30,7 +30,7 @@ export async function renderHome(app) {
         <div class="page-sub">${projetos.length} projetos no acervo</div>
       </div>
       <div class="toolbar">
-        <button class="btn btn-primary" data-act="novo-projeto">+ Novo projeto</button>
+        <button class="btn btn-primary edit-only" data-act="novo-projeto">+ Novo projeto</button>
       </div>
     </div>
 
