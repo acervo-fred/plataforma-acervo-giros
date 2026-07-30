@@ -3,9 +3,13 @@
    cor do próprio status), e o campo Conteúdo (observações). */
 
 import { store } from "../data/store.js";
-import { esc, formatAno } from "../ui/dom.js";
+import { esc, formatAno, toast } from "../ui/dom.js";
 import { badgeFromLista, corDoValor } from "../ui/badges.js";
 import { abrirNovaMidia, abrirNovaEstrutura } from "./cadastros.js";
+import { openModal, fieldTextarea, readValue } from "../ui/modal.js";
+import { suportaSelecaoPastas } from "../ui/pasta-tree.js";
+import { gerarListaArquivos, baixarTxt } from "../ui/lista-arquivos.js";
+import { usuarioAtual } from "../data/auth.js";
 
 const CORVAR = {
   gray: "--c-gray-fg", blue: "--c-blue-fg", amber: "--c-amber-fg",
@@ -68,6 +72,15 @@ export async function renderMidia(app, id) {
       </div>
     </section>
 
+    <!-- LISTA DE TODOS OS ARQUIVOS -->
+    <section class="section">
+      <div class="section-head"><h2>Lista de todos os arquivos da mídia</h2></div>
+      <div class="list-card" id="lista-arquivos">
+        ${listaArquivosRow(midia)}
+      </div>
+      ${suportaSelecaoPastas() ? "" : `<div class="note"><span class="note-i">ⓘ</span> Esse navegador não sabe ler pastas do computador. Abra pelo Google Chrome.</div>`}
+    </section>
+
     <!-- PROJETOS ARMAZENADOS (com conteúdo por projeto) -->
     <section class="section">
       <div class="section-head"><h2>Projetos armazenados</h2></div>
@@ -99,9 +112,11 @@ export async function renderMidia(app, id) {
       location.hash = "#/midias";
     },
     "nova-pasta": () => abrirNovaEstrutura({ midiaIdFixo: midia.id }),
+    "gerar-lista": (btn) => gerarEPersistirLista(midia, btn),
+    "ver-lista": () => abrirListaArquivos(midia),
   };
   app.querySelectorAll("[data-act]").forEach((btn) =>
-    btn.addEventListener("click", () => acoes[btn.dataset.act]?.())
+    btn.addEventListener("click", () => acoes[btn.dataset.act]?.(btn))
   );
 
   // editar/excluir pastas da estrutura
@@ -140,6 +155,108 @@ function estruturaRowMidia(e) {
       <button class="icon-btn danger" data-del-e data-id="${esc(e.id)}" title="Excluir"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
     </span>
   </div>`;
+}
+
+function listaArquivosRow(midia) {
+  if (!midia.listaArquivos) {
+    return `<div class="list-row">
+      <div class="lr-main">
+        <div class="lr-title">Nenhuma lista gerada ainda</div>
+        <div class="lr-sub">Gera um arquivo .txt com todos os arquivos desta mídia, organizados por pasta e subpasta.</div>
+      </div>
+      <button class="btn btn-primary edit-only" data-act="gerar-lista" ${suportaSelecaoPastas() ? "" : "disabled"}>Gerar lista</button>
+    </div>`;
+  }
+  const data = midia.listaArquivosGeradoEm
+    ? new Date(midia.listaArquivosGeradoEm).toLocaleDateString("pt-BR")
+    : "—";
+  const resumo = [
+    midia.listaArquivosArquivos != null ? `${midia.listaArquivosArquivos} arquivos` : null,
+    midia.listaArquivosPastas != null ? `${midia.listaArquivosPastas} pastas` : null,
+  ].filter(Boolean).join(" · ");
+  return `<div class="list-row">
+    <div class="lr-main">
+      <div class="lr-title">Lista gerada em ${esc(data)}</div>
+      ${resumo ? `<div class="lr-sub">${esc(resumo)}</div>` : ""}
+    </div>
+    <button class="btn btn-ghost" data-act="ver-lista">Ver lista</button>
+  </div>`;
+}
+
+async function gerarEPersistirLista(midia, btn) {
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Escaneando…";
+  try {
+    const resultado = await gerarListaArquivos();
+    if (!resultado) return; // cancelado na escolha da pasta
+    const campos = {
+      listaArquivos: resultado.texto,
+      listaArquivosGeradoEm: new Date().toISOString(),
+      listaArquivosArquivos: resultado.arquivos,
+      listaArquivosPastas: resultado.pastas,
+    };
+    Object.assign(midia, campos);
+    await store.updateMidia(midia.id, campos);
+    if (resultado.truncado) toast("Mídia com muitos itens — a lista mostra só os primeiros.");
+    window.dispatchEvent(new CustomEvent("data-changed"));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
+}
+
+function abrirListaArquivos(midia) {
+  const editor = !!usuarioAtual();
+  openModal({
+    title: "Lista de todos os arquivos",
+    subtitle: midia.nome,
+    submitLabel: editor ? "Salvar alterações" : "Fechar",
+    bodyHtml: `
+      <div class="toolbar" style="margin-bottom:10px">
+        <button type="button" class="btn btn-ghost" data-act="baixar">⬇ Baixar .txt</button>
+        <button type="button" class="btn btn-ghost edit-only" data-act="regerar">↻ Gerar novamente (substitui)</button>
+      </div>
+      ${fieldTextarea("texto", "Conteúdo", { value: midia.listaArquivos || "" })}
+    `,
+    onMount: (form) => {
+      const textarea = form.querySelector("#f_texto");
+      textarea.style.fontFamily = "ui-monospace, SFMono-Regular, Menlo, monospace";
+      textarea.style.fontSize = "12.5px";
+      textarea.rows = 22;
+      if (!editor) textarea.readOnly = true;
+      form.querySelector('[data-act="baixar"]')?.addEventListener("click", () => {
+        baixarTxt(`${midia.nome} - lista de arquivos.txt`, textarea.value);
+      });
+      form.querySelector('[data-act="regerar"]')?.addEventListener("click", async (ev) => {
+        const btn = ev.currentTarget;
+        const textoOriginal = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Escaneando…";
+        try {
+          const resultado = await gerarListaArquivos();
+          if (!resultado) return; // cancelado na escolha da pasta
+          textarea.value = resultado.texto;
+          textarea.dataset.arquivos = resultado.arquivos;
+          textarea.dataset.pastas = resultado.pastas;
+          if (resultado.truncado) toast("Mídia com muitos itens — a lista mostra só os primeiros.");
+        } finally {
+          btn.disabled = false;
+          btn.textContent = textoOriginal;
+        }
+      });
+    },
+    onSubmit: async (form) => {
+      if (!editor) return; // "Fechar" — nada a salvar
+      const textarea = form.querySelector("#f_texto");
+      const texto = readValue(form, "texto");
+      const campos = { listaArquivos: texto, listaArquivosGeradoEm: new Date().toISOString() };
+      if (textarea.dataset.arquivos !== undefined) campos.listaArquivosArquivos = Number(textarea.dataset.arquivos);
+      if (textarea.dataset.pastas !== undefined) campos.listaArquivosPastas = Number(textarea.dataset.pastas);
+      await store.updateMidia(midia.id, campos);
+      window.dispatchEvent(new CustomEvent("data-changed"));
+    },
+  });
 }
 
 function projetoRow(p, listas) {
