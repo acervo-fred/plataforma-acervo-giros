@@ -231,7 +231,7 @@ export const firestoreStore = {
     const ref = await addDoc(collection(fdb, COLLECTIONS.estrutura), {
       projetoId: d.projetoId, midiaId: d.midiaId || "",
       caminho: d.caminho, tipoMaterial: d.tipoMaterial,
-      resumo: d.resumo || "", statusPasta: d.statusPasta, arquivadoLto: d.arquivadoLto || "",
+      resumo: d.resumo || "", arquivadoLto: d.arquivadoLto || "",
     });
     return { id: ref.id, ...d };
   },

@@ -1,10 +1,11 @@
 /* Importar caminho (dentro de uma Mídia) — escaneia a mídia externa
    conectada e grava direto na Estrutura das Pastas e Arquivos dessa
-   mídia. Projeto, tipo de material e status valem para todas as
-   pastas marcadas num mesmo lote; dá pra editar cada pasta depois,
-   se precisar de valores diferentes. Mostra o que já está cadastrado
-   nesta mídia pra evitar redundância — e bloqueia repetir o mesmo
-   caminho (comparado por completo, do nome do HD até a pasta final). */
+   mídia. Projeto vale para todas as pastas marcadas num mesmo lote;
+   tipo de material e descrição são definidos pasta a pasta, direto
+   na árvore. Dá pra editar cada pasta depois, se precisar de outros
+   valores. Mostra o que já está cadastrado nesta mídia pra evitar
+   redundância — e bloqueia repetir o mesmo caminho (comparado por
+   completo, do nome do HD até a pasta final). */
 
 import { store } from "../data/store.js";
 import { esc, formatAno } from "../ui/dom.js";
@@ -53,27 +54,13 @@ export async function renderMidiaPastas(app, midiaId) {
     ${!projetosValidos.length ? `
       <div class="note"><span class="note-i">ⓘ</span> Essa mídia ainda não tem nenhum projeto vinculado. Vincule um projeto em "Projetos armazenados" antes de cadastrar pastas.</div>
     ` : `
-      <div class="field-2col" style="margin-bottom:6px">
-        <div class="field">
-          <label for="f-projeto">Projeto</label>
-          <select class="input" id="f-projeto">
-            ${projetosValidos.map((p) => `<option value="${esc(p.id)}">${esc(p.nome)} (${esc(formatAno(p.ano))})</option>`).join("")}
-          </select>
-        </div>
-        <div class="field">
-          <label for="f-tipo">Tipo de material</label>
-          <select class="input" id="f-tipo">
-            ${listas.tipoMaterial.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("")}
-          </select>
-        </div>
-      </div>
-      <div class="field">
-        <label for="f-status">Status da pasta</label>
-        <select class="input" id="f-status" style="max-width:260px">
-          ${listas.statusPasta.map((s) => { const v = typeof s === "string" ? s : s.valor; return `<option value="${esc(v)}">${esc(v)}</option>`; }).join("")}
+      <div class="field" style="margin-bottom:6px;max-width:320px">
+        <label for="f-projeto">Projeto</label>
+        <select class="input" id="f-projeto">
+          ${projetosValidos.map((p) => `<option value="${esc(p.id)}">${esc(p.nome)} (${esc(formatAno(p.ano))})</option>`).join("")}
         </select>
       </div>
-      <div class="note" style="margin-top:12px"><span class="note-i">ⓘ</span> Projeto, tipo de material e status valem para todas as pastas marcadas num mesmo lote — dá pra editar cada pasta depois, direto na Estrutura, se precisar de valores diferentes.</div>
+      <div class="note" style="margin-top:12px"><span class="note-i">ⓘ</span> Projeto vale para todas as pastas marcadas num mesmo lote. Tipo de material é definido pasta a pasta, direto na árvore — dá pra editar depois, na Estrutura, se precisar.</div>
       <div id="area-scan" style="margin-top:16px"></div>
     `}
   `;
@@ -85,12 +72,11 @@ export async function renderMidiaPastas(app, midiaId) {
 
   montarSeletorPastas(app.querySelector("#area-scan"), {
     caminhosExistentes: estrutura.map((e) => e.caminho),
+    tiposMaterial: listas.tipoMaterial,
     onSalvar: async (marcados) => {
       const projetoId = app.querySelector("#f-projeto").value;
-      const tipoMaterial = app.querySelector("#f-tipo").value;
-      const statusPasta = app.querySelector("#f-status").value;
       const novas = await Promise.all(marcados.map((no) => store.addEstrutura({
-        projetoId, midiaId, caminho: no.caminho, tipoMaterial, statusPasta, resumo: no.conteudo,
+        projetoId, midiaId, caminho: no.caminho, tipoMaterial: no.tipoMaterial, resumo: no.conteudo,
       })));
       estrutura.push(...novas);
     },

@@ -25,6 +25,11 @@ function brParaISO(br) {
   const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(br || "");
   return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
 }
+// extrai o valor numérico de uma capacidade livre existente (ex.: "8TB" → "8")
+function capacidadeParaNumero(str) {
+  const m = /([\d.,]+)/.exec(str || "");
+  return m ? m[1].replace(",", ".") : "";
+}
 
 /* ---------------- Projeto (criar / editar) ---------------- */
 export async function abrirNovoProjeto(existente = null) {
@@ -86,7 +91,7 @@ export async function abrirNovaMidia(existente = null, { projetoIdFixo = null } 
       ${fieldText("nome", "Nome da mídia", { required: true, value: m.nome || "", placeholder: "Ex.: HD_IMORTAIS_03" })}
       <div class="field-2col">
         ${fieldSelect("tipo", "Tipo", listas.tipoMidia, { value: m.tipo || listas.tipoMidia[0] })}
-        ${fieldText("capacidade", "Capacidade", { value: m.capacidade || "", placeholder: "Ex.: 8TB" })}
+        ${fieldText("capacidade", "Capacidade (TB)", { type: "number", value: capacidadeParaNumero(m.capacidade), placeholder: "Ex.: 8" })}
       </div>
       <div class="field-2col">
         ${fieldSelect("statusMidia", "Status", listas.statusMidia, { value: m.statusMidia || listas.statusMidia[0]?.valor })}
@@ -123,12 +128,6 @@ export async function abrirNovaMidia(existente = null, { projetoIdFixo = null } 
         return (listas.tipoMaterial || []).map((t) =>
           `<option value="${esc(t)}" ${t === selected ? "selected" : ""}>${esc(t)}</option>`
         ).join("");
-      }
-      function statusOptsHtml(selected) {
-        return (listas.statusPasta || []).map((s) => {
-          const v = typeof s === "string" ? s : s.valor;
-          return `<option value="${esc(v)}" ${v === selected ? "selected" : ""}>${esc(v)}</option>`;
-        }).join("");
       }
 
       function atualizarEstProj() {
@@ -179,13 +178,9 @@ export async function abrirNovaMidia(existente = null, { projetoIdFixo = null } 
         return result;
       };
 
-      function addEstRow({ id = "", projetoId = "", caminho = "", tipoMaterial = "", statusPasta = "" } = {}) {
+      function addEstRow({ id = "", projetoId = "", caminho = "", tipoMaterial = "" } = {}) {
         if (!projetoId && marcados.size > 0) projetoId = [...marcados][0];
         if (!tipoMaterial) tipoMaterial = (listas.tipoMaterial || [])[0] || "";
-        if (!statusPasta) {
-          const s0 = (listas.statusPasta || [])[0];
-          statusPasta = typeof s0 === "string" ? s0 : (s0?.valor || "");
-        }
         const row = document.createElement("div");
         row.className = "est-form-row";
         if (id) row.dataset.estId = id;
@@ -197,7 +192,6 @@ export async function abrirNovaMidia(existente = null, { projetoIdFixo = null } 
           <input class="est-caminho" type="text" value="${esc(caminho)}" placeholder="Caminho da pasta…" title="${esc(caminho)}">
           <div class="est-form-row-sub">
             <select class="est-tipo">${tipoOptsHtml(tipoMaterial)}</select>
-            <select class="est-status">${statusOptsHtml(statusPasta)}</select>
           </div>
         `;
         row.querySelector(".est-del-btn").addEventListener("click", () => {
@@ -211,7 +205,7 @@ export async function abrirNovaMidia(existente = null, { projetoIdFixo = null } 
       }
 
       for (const e of estruturaExistente) {
-        addEstRow({ id: e.id, projetoId: e.projetoId, caminho: e.caminho, tipoMaterial: e.tipoMaterial, statusPasta: e.statusPasta });
+        addEstRow({ id: e.id, projetoId: e.projetoId, caminho: e.caminho, tipoMaterial: e.tipoMaterial });
       }
 
       form.querySelector("#est-add-btn").addEventListener("click", () => addEstRow());
@@ -226,7 +220,6 @@ export async function abrirNovaMidia(existente = null, { projetoIdFixo = null } 
             projetoId: row.querySelector(".est-proj").value,
             caminho: cam,
             tipoMaterial: row.querySelector(".est-tipo").value,
-            statusPasta: row.querySelector(".est-status").value,
           });
         });
         return rows;
@@ -236,10 +229,11 @@ export async function abrirNovaMidia(existente = null, { projetoIdFixo = null } 
     onSubmit: async (form) => {
       const nome = readValue(form, "nome");
       if (!nome) throw new Error("Informe o nome da mídia.");
+      const capacidadeNum = readValue(form, "capacidade");
       const campos = {
         nome,
         tipo: readValue(form, "tipo"),
-        capacidade: readValue(form, "capacidade"),
+        capacidade: capacidadeNum ? `${capacidadeNum}TB` : "",
         statusMidia: readValue(form, "statusMidia"),
         local: readValue(form, "local"),
         projetosArmazenados: form._getProjetosArmazenados(),
@@ -260,7 +254,7 @@ export async function abrirNovaMidia(existente = null, { projetoIdFixo = null } 
         await store.removeEstrutura(id);
       }
       for (const row of form._getEstruturaRows()) {
-        const dadosEst = { projetoId: row.projetoId, midiaId, caminho: row.caminho, tipoMaterial: row.tipoMaterial, statusPasta: row.statusPasta };
+        const dadosEst = { projetoId: row.projetoId, midiaId, caminho: row.caminho, tipoMaterial: row.tipoMaterial };
         if (row.id) await store.updateEstrutura(row.id, dadosEst);
         else await store.addEstrutura(dadosEst);
       }
@@ -326,10 +320,7 @@ export async function abrirNovaEstrutura({ projetoIdFixo = null, midiaIdFixo = n
       ${seletorProjeto}
       ${seletorMidia}
       ${fieldText("caminho", "Caminho", { required: true, value: e.caminho || "", placeholder: "Ex.: NOME_DO_HD/BRUTO" })}
-      <div class="field-2col">
-        ${fieldSelect("tipoMaterial", "Tipo de material", listas.tipoMaterial, { value: e.tipoMaterial || listas.tipoMaterial[0] })}
-        ${fieldSelect("statusPasta", "Status da pasta", listas.statusPasta, { value: e.statusPasta || listas.statusPasta[0]?.valor })}
-      </div>
+      ${fieldSelect("tipoMaterial", "Tipo de material", listas.tipoMaterial, { value: e.tipoMaterial || listas.tipoMaterial[0] })}
       ${fieldText("resumo", "Resumo", { value: e.resumo || "", placeholder: "Ex.: Diárias D01 até D22" })}
       ${fieldText("arquivadoLto", "Arquivado em LTO (opcional)", { value: e.arquivadoLto || "", placeholder: "Ex.: LTO-009" })}
     `,
@@ -341,7 +332,6 @@ export async function abrirNovaEstrutura({ projetoIdFixo = null, midiaIdFixo = n
         midiaId: midiaIdFixo || readValue(form, "midiaId"),
         caminho,
         tipoMaterial: readValue(form, "tipoMaterial"),
-        statusPasta: readValue(form, "statusPasta"),
         resumo: readValue(form, "resumo"),
         arquivadoLto: readValue(form, "arquivadoLto"),
       };

@@ -78,7 +78,7 @@ export async function renderProjeto(app, id) {
       <div class="section-head"><h2>Estrutura de pastas <span class="section-hint">pastas de cada mídia deste projeto</span></h2>
         <button class="btn btn-ghost edit-only" data-act="nova-pasta">+ Nova pasta</button></div>
       <div id="estrutura-grupos">
-        ${estruturaAgrupada(estrutura, midiaMap, listas)}
+        ${estruturaAgrupada(estrutura, midiaMap)}
       </div>
     </section>
 
@@ -187,7 +187,7 @@ function metaCell(label, valueHtml, extraClass = "") {
 }
 
 /* Estrutura agrupada por mídia */
-function estruturaAgrupada(estrutura, midiaMap, listas) {
+function estruturaAgrupada(estrutura, midiaMap) {
   if (!estrutura.length) {
     return `<div class="empty">Nenhuma pasta registrada. Cadastre pela mídia ou clique em "+ Nova pasta".</div>`;
   }
@@ -213,20 +213,19 @@ function estruturaAgrupada(estrutura, midiaMap, listas) {
         ${midia ? `<button class="btn btn-ghost est-grupo-add edit-only" data-act="nova-pasta-grupo" data-midia="${esc(midiaId)}">+ pasta</button>` : ""}
       </div>
       <div class="list-card">
-        ${pastas.map((p) => estruturaRow(p, listas)).join("")}
+        ${pastas.map((p) => estruturaRow(p)).join("")}
       </div>
     </div>`;
   }).join("");
 }
 
-function estruturaRow(e, listas) {
+function estruturaRow(e) {
   return `<div class="list-row">
     <div class="lr-main">
       <div class="lr-title">${esc(e.caminho)} <span class="muted" style="font-weight:400">· ${esc(e.tipoMaterial)}</span></div>
       ${e.resumo ? `<div class="lr-sub">${esc(e.resumo)}</div>` : ""}
     </div>
     ${e.arquivadoLto ? `<span class="tag">${esc(e.arquivadoLto)}</span>` : ""}
-    ${badgeFromLista(listas.statusPasta, e.statusPasta)}
     ${acoesRow("e", e.id)}
   </div>`;
 }

@@ -337,7 +337,6 @@ const mockStore = {
       caminho: dados.caminho,
       tipoMaterial: dados.tipoMaterial,
       resumo: dados.resumo || "",
-      statusPasta: dados.statusPasta,
       arquivadoLto: dados.arquivadoLto || "",
     };
     db.estrutura.push(novo);

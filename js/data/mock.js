@@ -24,12 +24,6 @@ export const listas = {
     "Sem atividade", "Catalogando", "Copiando",
     "Conferindo", "Gerando Proxy", "Gravando LTO",
   ],
-  statusPasta: [
-    { valor: "Pendente", cor: "gray" },
-    { valor: "Em organização", cor: "amber" },
-    { valor: "Organizada", cor: "green" },
-    { valor: "Copiada", cor: "blue" },
-  ],
   statusMidia: [
     { valor: "Ativa", cor: "green" },
     { valor: "Em uso", cor: "blue" },
@@ -90,10 +84,10 @@ export const midias = [
 ];
 
 export const estrutura = [
-  { id: "e1", projetoId: "p1", midiaId: "m1", caminho: "HD_IMORTAIS_03/BRUTO", tipoMaterial: "Bruto", resumo: "Diárias D01 até D22", statusPasta: "Em organização", arquivadoLto: "" },
-  { id: "e2", projetoId: "p1", midiaId: "m1", caminho: "HD_IMORTAIS_03/AUDIO", tipoMaterial: "Áudio", resumo: "Som direto", statusPasta: "Organizada", arquivadoLto: "" },
-  { id: "e3", projetoId: "p1", midiaId: "m3", caminho: "NAS_PRINCIPAL/PROXY", tipoMaterial: "Proxy", resumo: "Proxies gerados p/ edição", statusPasta: "Pendente", arquivadoLto: "" },
-  { id: "e4", projetoId: "p2", midiaId: "m4", caminho: "LTO-009/BRUTO", tipoMaterial: "Bruto", resumo: "Material completo", statusPasta: "Copiada", arquivadoLto: "LTO-009" },
+  { id: "e1", projetoId: "p1", midiaId: "m1", caminho: "HD_IMORTAIS_03/BRUTO", tipoMaterial: "Bruto", resumo: "Diárias D01 até D22", arquivadoLto: "" },
+  { id: "e2", projetoId: "p1", midiaId: "m1", caminho: "HD_IMORTAIS_03/AUDIO", tipoMaterial: "Áudio", resumo: "Som direto", arquivadoLto: "" },
+  { id: "e3", projetoId: "p1", midiaId: "m3", caminho: "NAS_PRINCIPAL/PROXY", tipoMaterial: "Proxy", resumo: "Proxies gerados p/ edição", arquivadoLto: "" },
+  { id: "e4", projetoId: "p2", midiaId: "m4", caminho: "LTO-009/BRUTO", tipoMaterial: "Bruto", resumo: "Material completo", arquivadoLto: "LTO-009" },
 ];
 
 export const historico = [

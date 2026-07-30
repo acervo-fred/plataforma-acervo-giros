@@ -1,7 +1,8 @@
 /* Seletor de pastas em árvore — escaneia uma pasta/mídia externa
    conectada (File System Access API, Chrome/Edge) e mostra a árvore
-   de subpastas, expansível como no Finder, com checkbox + campo de
-   conteúdo por pasta. Módulo genérico: quem chama decide o que fazer
+   de subpastas, expansível como no Finder, com checkbox + tipo de
+   material + campo de conteúdo por pasta (cada pasta marcada define
+   seu próprio tipo). Módulo genérico: quem chama decide o que fazer
    com as pastas marcadas via onSalvar — usado no cadastro de pastas
    de uma Mídia (Estrutura). */
 
@@ -18,7 +19,7 @@ export function suportaSelecaoPastas() {
 }
 
 function novoNo(nome, caminho) {
-  return { nome, caminho, filhos: [], incluir: false, conteudo: "", aberto: false };
+  return { nome, caminho, filhos: [], incluir: false, conteudo: "", tipoMaterial: "", aberto: false };
 }
 
 // varre recursivamente, ignorando pastas ocultas/de sistema; para de
@@ -83,7 +84,7 @@ function limparVisibilidade(no) {
   no.filhos.forEach(limparVisibilidade);
 }
 
-function renderNo(no, profundidade, filtrando, jaCadastrados) {
+function renderNo(no, profundidade, filtrando, jaCadastrados, tiposMaterial) {
   if (filtrando && !no._visivel) return "";
   const temFilhos = no.filhos.length > 0;
   const abertoEfetivo = filtrando ? (no.aberto || no._forcarAberto) : no.aberto;
@@ -98,9 +99,13 @@ function renderNo(no, profundidade, filtrando, jaCadastrados) {
       <span class="tm-node-nome" title="${esc(no.caminho)}">${esc(no.nome)}</span>
       ${duplicado
         ? `<span class="tm-node-dup-tag" title="Já existe na Estrutura desta mídia">já cadastrada</span>`
-        : `<input type="text" class="input tm-node-conteudo" data-conteudo="${esc(no.caminho)}" value="${esc(no.conteudo)}" placeholder="Conteúdo desta pasta" />`}
+        : `<select class="input tm-node-tipo" data-tipo="${esc(no.caminho)}">
+            <option value="">Tipo de material</option>
+            ${tiposMaterial.map((t) => `<option value="${esc(t)}" ${no.tipoMaterial === t ? "selected" : ""}>${esc(t)}</option>`).join("")}
+          </select>
+          <input type="text" class="input tm-node-conteudo" data-conteudo="${esc(no.caminho)}" value="${esc(no.conteudo)}" placeholder="Conteúdo desta pasta" />`}
     </div>
-    ${temFilhos ? `<div class="tm-node-filhos" ${abertoEfetivo ? "" : `style="display:none"`}>${no.filhos.map((f) => renderNo(f, profundidade + 1, filtrando, jaCadastrados)).join("")}</div>` : ""}
+    ${temFilhos ? `<div class="tm-node-filhos" ${abertoEfetivo ? "" : `style="display:none"`}>${no.filhos.map((f) => renderNo(f, profundidade + 1, filtrando, jaCadastrados, tiposMaterial)).join("")}</div>` : ""}
   </div>`;
 }
 
@@ -117,6 +122,7 @@ export function montarSeletorPastas(container, opts = {}) {
   const {
     onSalvar,
     caminhosExistentes = [],
+    tiposMaterial = [],
     textoBotaoEscanear = "Abrir dispositivo externo",
     textoBotaoSalvar = "Salvar pastas marcadas",
     onSalvo,
@@ -217,6 +223,20 @@ export function montarSeletorPastas(container, opts = {}) {
         atualizarContagem();
       }
     });
+    treeEl.addEventListener("change", (e) => {
+      const sel = e.target.closest("[data-tipo]");
+      if (!sel) return;
+      const no = mapaNos.get(sel.dataset.tipo);
+      if (!no) return;
+      no.tipoMaterial = sel.value;
+      // escolher o tipo já marca a pasta, sem precisar clicar no checkbox
+      if (sel.value && !no.incluir) {
+        no.incluir = true;
+        const cb = sel.closest(".tm-node-row")?.querySelector("[data-incluir]");
+        if (cb) cb.checked = true;
+        atualizarContagem();
+      }
+    });
 
     redesenharTree();
   }
@@ -231,7 +251,7 @@ export function montarSeletorPastas(container, opts = {}) {
     if (termo) calcularVisibilidade(raiz, termo);
     else limparVisibilidade(raiz);
 
-    area.querySelector("#tm-tree").innerHTML = renderNo(raiz, 0, !!termo, jaCadastrados);
+    area.querySelector("#tm-tree").innerHTML = renderNo(raiz, 0, !!termo, jaCadastrados, tiposMaterial);
     atualizarContagem();
   }
 
@@ -252,7 +272,7 @@ export function montarSeletorPastas(container, opts = {}) {
     btn.disabled = true;
     btn.textContent = "Salvando…";
     try {
-      await onSalvar?.(marcados.map((no) => ({ caminho: no.caminho, conteudo: no.conteudo })), raizAtual);
+      await onSalvar?.(marcados.map((no) => ({ caminho: no.caminho, conteudo: no.conteudo, tipoMaterial: no.tipoMaterial })), raizAtual);
     } catch (err) {
       btn.disabled = false;
       btn.textContent = textoBotaoSalvar;

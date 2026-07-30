@@ -16,7 +16,6 @@ const CORVAR = (c) => `var(--c-${c}-fg)`;
 const CATEGORIAS = [
   { chave: "statusProjeto", titulo: "Status de projeto", colorida: true },
   { chave: "atividadeAtual", titulo: "Atividade atual", colorida: false },
-  { chave: "statusPasta", titulo: "Status de pasta (estrutura)", colorida: true },
   { chave: "statusMidia", titulo: "Status de mídia", colorida: true },
   { chave: "statusDemanda", titulo: "Status de demanda", colorida: true },
   { chave: "prioridade", titulo: "Prioridades", colorida: true, hint: "Demandas" },
