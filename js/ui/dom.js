@@ -9,6 +9,24 @@ export function esc(s) {
     .replace(/"/g, "&quot;");
 }
 
+// Ordena demandas: concluídas sempre por último; entre as demais (e dentro
+// de cada grupo), por prioridade (ordem da lista listas.prioridade) e depois
+// por ordem alfabética da pendência.
+export function ordenarDemandas(demandas, listaPrioridade = []) {
+  const ordemPrioridade = Object.fromEntries(
+    listaPrioridade.map((p, i) => [typeof p === "string" ? p : p.valor, i])
+  );
+  const indice = (v) => ordemPrioridade[v] ?? Infinity;
+  return [...demandas].sort((a, b) => {
+    const feitaA = a.status === "Concluída";
+    const feitaB = b.status === "Concluída";
+    if (feitaA !== feitaB) return feitaA ? 1 : -1;
+    const diff = indice(a.prioridade) - indice(b.prioridade);
+    if (diff !== 0) return diff;
+    return (a.pendencia || "").localeCompare(b.pendencia || "", "pt-BR");
+  });
+}
+
 // Formata o ano do projeto p/ exibição — 1900 é o valor placeholder de "não informado"
 export function formatAno(ano) {
   if (ano === 1900 || ano === "1900" || ano == null || ano === "") return "Ano não informado";

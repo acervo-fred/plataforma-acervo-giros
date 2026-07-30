@@ -2,7 +2,7 @@
    Filtro por status, criar, editar, excluir e navegar para o projeto. */
 
 import { store } from "../data/store.js";
-import { esc } from "../ui/dom.js";
+import { esc, ordenarDemandas } from "../ui/dom.js";
 import { badgeFromLista } from "../ui/badges.js";
 import { abrirNovaDemanda } from "./cadastros.js";
 
@@ -36,11 +36,11 @@ export async function renderDemandasLista(app) {
 
   function desenhar() {
     const t = busca.trim().toLowerCase();
-    const arr = demandas.filter((d) => {
+    const arr = ordenarDemandas(demandas.filter((d) => {
       const okBusca = !t || (d.pendencia || "").toLowerCase().includes(t) || (d.projetoNome || "").toLowerCase().includes(t);
       const okFiltro = filtro === "Todas" || d.status === filtro;
       return okBusca && okFiltro;
-    });
+    }), listas.prioridade);
     lista.innerHTML = (arr.length
       ? `<div class="dem-header"><div class="lr-main"></div><div class="dem-col">Prioridade</div><div class="dem-col">Status</div><div style="width:56px"></div></div>`
         + arr.map((d) => row(d, listas)).join("")

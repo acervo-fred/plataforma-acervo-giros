@@ -3,7 +3,7 @@
    Inclui editar/excluir do projeto e de cada item das listas. */
 
 import { store } from "../data/store.js";
-import { esc, formatAno } from "../ui/dom.js";
+import { esc, formatAno, ordenarDemandas } from "../ui/dom.js";
 import { badgeFromLista } from "../ui/badges.js";
 import { abrirNovoProjeto, abrirNovaMidia, abrirNovaEstrutura, abrirNovoHistorico, abrirNovaDemanda } from "./cadastros.js";
 
@@ -15,7 +15,7 @@ export async function renderProjeto(app, id) {
     return;
   }
 
-  const [listas, estrutura, midias, historico, demandas, fitas] = await Promise.all([
+  const [listas, estrutura, midias, historico, demandasBrutas, fitas] = await Promise.all([
     store.getListas(),
     store.estruturaDoProjeto(id),
     store.midiasDoProjeto(id),
@@ -23,6 +23,7 @@ export async function renderProjeto(app, id) {
     store.demandasDoProjeto(id),
     store.fitasDoProjeto(id),
   ]);
+  const demandas = ordenarDemandas(demandasBrutas, listas.prioridade);
 
   const midiaMap = Object.fromEntries(midias.map((m) => [m.id, m]));
   const totalTB = midias.filter((m) => m.tipo !== "LTO").reduce((s, m) => s + parseTB(m.capacidade), 0);
