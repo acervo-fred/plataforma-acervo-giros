@@ -22,6 +22,7 @@ service cloud.firestore {
         "gabrielscmiranda@gmail.com",
         "datamanager@girostraffic.page",
         "assistente.extra@girostraffic.page",
+        "assistente.principal@girostraffic.page",
         "assistente@giros.com.br",
         "producao.finalizacao@giros.com.br"
       ];
