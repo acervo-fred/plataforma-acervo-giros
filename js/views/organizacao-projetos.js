@@ -4,7 +4,7 @@
    notas"), com ordenação por prioridade ou por nome. */
 
 import { store } from "../data/store.js";
-import { esc } from "../ui/dom.js";
+import { esc, compararNomes } from "../ui/dom.js";
 import { organizacaoProjetosTitulos as TITULOS } from "../data/mock.js";
 import { usuarioAtual } from "../data/auth.js";
 
@@ -55,9 +55,9 @@ export async function renderProjetosPrioridade(cont) {
     const base = filtro === "avaliados" ? linhas.filter((l) => l.prioridade > 0) : linhas;
     const arr = [...base];
     if (ordenacao === "prioridade") {
-      arr.sort((a, b) => b.prioridade - a.prioridade || a.titulo.localeCompare(b.titulo, "pt-BR"));
+      arr.sort((a, b) => b.prioridade - a.prioridade || compararNomes(a.titulo, b.titulo));
     } else {
-      arr.sort((a, b) => a.titulo.localeCompare(b.titulo, "pt-BR"));
+      arr.sort((a, b) => compararNomes(a.titulo, b.titulo));
     }
     return arr;
   }

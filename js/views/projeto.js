@@ -3,7 +3,7 @@
    Inclui editar/excluir do projeto e de cada item das listas. */
 
 import { store } from "../data/store.js";
-import { esc, formatAno, ordenarDemandas } from "../ui/dom.js";
+import { esc, formatAno, ordenarDemandas, compararNomes } from "../ui/dom.js";
 import { badgeFromLista } from "../ui/badges.js";
 import { abrirNovoProjeto, abrirNovaMidia, abrirNovaEstrutura, abrirNovoHistorico, abrirNovaDemanda } from "./cadastros.js";
 
@@ -54,7 +54,7 @@ export async function renderProjeto(app, id) {
       ${metaCell(
         `Localizações <span class="loc-total-inline">(${midias.length} · ${totalTexto})</span>`,
         midias.length
-          ? `<div class="loc-list">${[...midias].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map((m) => `
+          ? `<div class="loc-list">${[...midias].sort((a, b) => compararNomes(a.nome, b.nome)).map((m) => `
               <div class="loc-list-item">
                 <a href="#/midia/${esc(m.id)}" class="loc-nome" title="${esc(m.nome)}">${esc(m.nome)}</a>
                 <span class="loc-cap">${esc(m.capacidade || "—")}</span>

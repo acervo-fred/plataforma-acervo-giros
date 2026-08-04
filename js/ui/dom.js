@@ -9,6 +9,12 @@ export function esc(s) {
     .replace(/"/g, "&quot;");
 }
 
+// Compara nomes em ordem alfabética "natural": números embutidos contam
+// pelo valor (assim "Imortais 10" vem depois de "Imortais 9", não do 1).
+export function compararNomes(a, b) {
+  return String(a ?? "").localeCompare(String(b ?? ""), "pt-BR", { numeric: true, sensitivity: "base" });
+}
+
 // Ordena demandas: concluídas sempre por último; entre as demais (e dentro
 // de cada grupo), por prioridade (ordem da lista listas.prioridade) e depois
 // por ordem alfabética da pendência.
@@ -23,7 +29,7 @@ export function ordenarDemandas(demandas, listaPrioridade = []) {
     if (feitaA !== feitaB) return feitaA ? 1 : -1;
     const diff = indice(a.prioridade) - indice(b.prioridade);
     if (diff !== 0) return diff;
-    return (a.pendencia || "").localeCompare(b.pendencia || "", "pt-BR");
+    return compararNomes(a.pendencia, b.pendencia);
   });
 }
 

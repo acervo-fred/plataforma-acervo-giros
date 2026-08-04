@@ -2,7 +2,7 @@
    Busca, criar, editar, excluir e navegar para o detalhe. */
 
 import { store } from "../data/store.js";
-import { esc } from "../ui/dom.js";
+import { esc, compararNomes } from "../ui/dom.js";
 import { badgeFromLista } from "../ui/badges.js";
 import { abrirNovaMidia } from "./cadastros.js";
 
@@ -31,7 +31,7 @@ export async function renderMidiasLista(app) {
     const t = busca.trim().toLowerCase();
     const arr = midias
       .filter((m) => !t || m.nome.toLowerCase().includes(t) || (m.tipo || "").toLowerCase().includes(t))
-      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+      .sort((a, b) => compararNomes(a.nome, b.nome));
     lista.innerHTML = arr.length ? arr.map((m) => row(m, listas, nomePorId)).join("")
       : `<div class="empty">Nenhuma mídia encontrada.</div>`;
   }

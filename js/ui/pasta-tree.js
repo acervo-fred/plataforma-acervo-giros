@@ -6,7 +6,7 @@
    com as pastas marcadas via onSalvar — usado no cadastro de pastas
    de uma Mídia (Estrutura). */
 
-import { esc } from "./dom.js";
+import { esc, compararNomes } from "./dom.js";
 
 const LIMITE_PASTAS = 4000;
 const IGNORAR = new Set([
@@ -32,7 +32,7 @@ async function escanearArvore(dirHandle, no, mapaNos, contador) {
     if (handle.name.startsWith(".") || IGNORAR.has(handle.name)) continue;
     entradas.push(handle);
   }
-  entradas.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  entradas.sort((a, b) => compararNomes(a.name, b.name));
   for (const handle of entradas) {
     if (contador.n >= LIMITE_PASTAS) break;
     const filho = novoNo(handle.name, `${no.caminho}/${handle.name}`);

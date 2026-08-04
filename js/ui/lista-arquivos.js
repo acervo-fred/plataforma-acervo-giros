@@ -5,6 +5,8 @@
    fica salvo no próprio registro da mídia; quem chama decide onde
    guardar e também pode baixar como .txt. */
 
+import { compararNomes } from "./dom.js";
+
 const LIMITE_ITENS = 20000;
 const IGNORAR = new Set([
   "$RECYCLE.BIN", "System Volume Information", ".Trashes", ".fseventsd",
@@ -19,7 +21,7 @@ async function escanear(dirHandle, profundidade, linhas, contador, stats) {
     entradas.push(handle);
   }
   entradas.sort((a, b) =>
-    a.kind === b.kind ? a.name.localeCompare(b.name, "pt-BR") : (a.kind === "directory" ? -1 : 1));
+    a.kind === b.kind ? compararNomes(a.name, b.name) : (a.kind === "directory" ? -1 : 1));
 
   const indent = "  ".repeat(profundidade);
   for (const handle of entradas) {

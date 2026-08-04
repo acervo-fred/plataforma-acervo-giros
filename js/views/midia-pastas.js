@@ -8,7 +8,7 @@
    completo, do nome do HD até a pasta final). */
 
 import { store } from "../data/store.js";
-import { esc, formatAno } from "../ui/dom.js";
+import { esc, formatAno, compararNomes } from "../ui/dom.js";
 import { montarSeletorPastas } from "../ui/pasta-tree.js";
 import { usuarioAtual } from "../data/auth.js";
 
@@ -33,7 +33,7 @@ export async function renderMidiaPastas(app, midiaId) {
     store.projetosDaMidia(midiaId),
     store.estruturaDaMidia(midiaId),
   ]);
-  const projetosValidos = projetos.filter((p) => p.existe).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  const projetosValidos = projetos.filter((p) => p.existe).sort((a, b) => compararNomes(a.nome, b.nome));
 
   app.innerHTML = `
     <a class="back-link" href="#/midia/${esc(midiaId)}">← Voltar para ${esc(midia.nome)}</a>

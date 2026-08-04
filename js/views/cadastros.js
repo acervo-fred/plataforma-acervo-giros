@@ -5,7 +5,7 @@
    Após gravar, dispara "data-changed" para a tela atual se re-renderizar. */
 
 import { store } from "../data/store.js";
-import { esc, formatAno } from "../ui/dom.js";
+import { esc, formatAno, compararNomes } from "../ui/dom.js";
 import {
   openModal, fieldText, fieldTextarea, fieldSelect, fieldTags,
   hydrateTags, readTags, readValue,
@@ -80,7 +80,7 @@ export async function abrirNovaMidia(existente = null, { projetoIdFixo = null } 
     store.listProjetos(),
     ed ? store.estruturaDaMidia(m.id) : Promise.resolve([]),
   ]);
-  projetos.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  projetos.sort((a, b) => compararNomes(a.nome, b.nome));
   const itens = projetos.map((p) => ({ value: p.id, label: `${p.nome} (${formatAno(p.ano)})` }));
   const projetoFixo = !ed && projetoIdFixo ? projetos.find((p) => p.id === projetoIdFixo) : null;
   openModal({
@@ -272,7 +272,7 @@ export async function abrirNovaEstrutura({ projetoIdFixo = null, midiaIdFixo = n
   const [listas, projetos, midias] = await Promise.all([
     store.getListas(), store.listProjetos(), store.listMidias(),
   ]);
-  projetos.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  projetos.sort((a, b) => compararNomes(a.nome, b.nome));
   const ed = !!existente;
   const e = existente || {};
 
@@ -348,7 +348,7 @@ export async function abrirNovaEstrutura({ projetoIdFixo = null, midiaIdFixo = n
 // existente: registro a editar.
 export async function abrirNovoHistorico({ projetoIdFixo = null, responsavelFixo = null } = {}, existente = null) {
   const [listas, projetos] = await Promise.all([store.getListas(), store.listProjetos()]);
-  projetos.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  projetos.sort((a, b) => compararNomes(a.nome, b.nome));
   const ed = !!existente;
   const h = existente || {};
   const projetoSel = projetoIdFixo || h.projetoId || "";
@@ -450,7 +450,7 @@ export async function abrirNovoHistorico({ projetoIdFixo = null, responsavelFixo
 /* ---------------- Fita (criar / editar) ---------------- */
 export async function abrirNovaFita(existente = null) {
   const [listas, projetos] = await Promise.all([store.getListas(), store.listProjetos()]);
-  projetos.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  projetos.sort((a, b) => compararNomes(a.nome, b.nome));
   const ed = !!existente;
   const f = existente || {};
   const tipos = listas.tipoFita || ["Betacam 30", "Betacam 60", "Mini DV"];
@@ -501,7 +501,7 @@ export async function abrirNovaFita(existente = null) {
 /* ---------------- Fitas em lote ---------------- */
 export async function abrirLoteFitas() {
   const [listas, projetos] = await Promise.all([store.getListas(), store.listProjetos()]);
-  projetos.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  projetos.sort((a, b) => compararNomes(a.nome, b.nome));
   const tipos = listas.tipoFita || ["Betacam 30", "Betacam 60", "Mini DV"];
   const statuses = listas.statusFita || [{ valor: "Não catalogada", cor: "gray" }];
   const locais = listas.locaisFita || [];
@@ -562,7 +562,7 @@ export async function abrirLoteFitas() {
 /* ---------------- Pendência (criar / editar) ---------------- */
 export async function abrirNovaDemanda(projetoIdFixo = null, existente = null) {
   const [listas, projetos] = await Promise.all([store.getListas(), store.listProjetos()]);
-  projetos.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  projetos.sort((a, b) => compararNomes(a.nome, b.nome));
   const ed = !!existente;
   const d = existente || {};
   const projetoSel = projetoIdFixo || d.projetoId || "";

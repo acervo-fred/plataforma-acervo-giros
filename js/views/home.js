@@ -3,7 +3,7 @@
    vive no drawer da sidebar (ver app.js). */
 
 import { store } from "../data/store.js";
-import { esc, formatAno } from "../ui/dom.js";
+import { esc, formatAno, compararNomes } from "../ui/dom.js";
 import { badgeFromLista, corDoValor } from "../ui/badges.js";
 import { abrirNovoProjeto } from "./cadastros.js";
 
@@ -59,7 +59,7 @@ export async function renderHome(app) {
         const okStatus = filtroStatus === "Todos" || p.statusProjeto === filtroStatus;
         return okBusca && okStatus;
       })
-      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+      .sort((a, b) => compararNomes(a.nome, b.nome));
     grid.innerHTML = lista.length
       ? lista.map((p) => projectCard(p, listas)).join("")
       : `<div class="empty">Nenhum projeto encontrado.</div>`;

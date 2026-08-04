@@ -16,7 +16,7 @@ import { renderConfig } from "./views/config.js";
 import { renderAdmin } from "./views/admin.js";
 import { renderOrganizacao } from "./views/organizacao.js";
 import { renderFitasLista } from "./views/fitas-list.js";
-import { esc, toast } from "./ui/dom.js";
+import { esc, toast, compararNomes } from "./ui/dom.js";
 import { iconClock, iconAlert } from "./ui/icons.js";
 import { abrirNovaDemanda } from "./views/cadastros.js";
 import { onAuthChange, loginComGoogle, logout } from "./data/auth.js";
@@ -115,7 +115,7 @@ async function atualizarSidebarListas() {
   const [projetos, midias] = await Promise.all([store.listProjetos(), store.listMidias()]);
   const lpEl = document.getElementById("sg-list-projetos");
   const lmEl = document.getElementById("sg-list-midias");
-  const sortNome = (a, b) => a.nome.localeCompare(b.nome, "pt-BR");
+  const sortNome = (a, b) => compararNomes(a.nome, b.nome);
   if (lpEl) lpEl.innerHTML = projetos.slice().sort(sortNome).map((p) =>
     `<a href="#/projeto/${esc(p.id)}" data-sid="${esc(p.id)}">${esc(p.nome)}</a>`
   ).join("");
