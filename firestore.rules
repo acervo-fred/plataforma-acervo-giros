@@ -93,6 +93,14 @@ service cloud.firestore {
       allow delete: if catalogoAdminPrincipal();
     }
 
+    // Token da API do Vimeo compartilhado (catalogo_config/vimeo) — todo
+    // editor autorizado consegue ler (o app sincroniza sozinho pro
+    // localStorage do navegador dele), só o admin principal altera.
+    match /catalogo_config/{document=**} {
+      allow read: if catalogoEditor();
+      allow write: if catalogoAdminPrincipal();
+    }
+
     // Nada mais é exposto (RTDB é outro banco e não é afetado por isto).
   }
 }
