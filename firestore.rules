@@ -11,7 +11,12 @@ rules_version = '2';
 //
 // O Catálogo (catalogo_projetos) é diferente: fica restrito também
 // pra LEITURA, já que reúne links/senhas de material de clientes —
-// só quem estiver logado com conta autorizada consegue ler.
+// só quem estiver logado com conta autorizada consegue ler. Além
+// disso, o Catálogo tem autorização em DUAS camadas (leitor/editor),
+// gerenciada dentro do próprio app (tela "Acessos", admin
+// acervo@girostraffic.page) via a coleção catalogo_authorizedEmails
+// — ver bloco próprio mais abaixo. Isso é independente da lista fixa
+// abaixo, que continua sendo só do Acervo.
 //
 // Obs.: o Firestore não permite prefixo em path (ex.: acervo_{x}),
 // por isso cada coleção é listada explicitamente.
@@ -32,6 +37,22 @@ service cloud.firestore {
       ];
     }
 
+    // ---- Catálogo: admin próprio + papel (leitor/editor) por e-mail ----
+    function catalogoAdminPrincipal() {
+      return request.auth != null && request.auth.token.email == "acervo@girostraffic.page";
+    }
+    function catalogoPapel() {
+      return exists(/databases/$(database)/documents/catalogo_authorizedEmails/$(request.auth.token.email))
+        ? get(/databases/$(database)/documents/catalogo_authorizedEmails/$(request.auth.token.email)).data.papel
+        : null;
+    }
+    function catalogoAutorizado() {
+      return request.auth != null && (catalogoAdminPrincipal() || catalogoPapel() != null);
+    }
+    function catalogoEditor() {
+      return request.auth != null && (catalogoAdminPrincipal() || catalogoPapel() == "editor");
+    }
+
     match /acervo_projetos/{document=**}  { allow read: if true; allow write: if emailAutorizado(); }
     match /acervo_midias/{document=**}     { allow read: if true; allow write: if emailAutorizado(); }
     match /acervo_estrutura/{document=**}  { allow read: if true; allow write: if emailAutorizado(); }
@@ -47,8 +68,30 @@ service cloud.firestore {
 
     // Catálogo Projetos Giros — mesmo projeto Firebase, coleção isolada.
     // Restrito (leitura E escrita) — ao contrário do Acervo, aqui nem
-    // a leitura é livre: só conta Google autorizada.
-    match /catalogo_projetos/{document=**} { allow read, write: if emailAutorizado(); }
+    // a leitura é livre. Leitor lê, só editor (ou o admin) escreve.
+    match /catalogo_projetos/{document=**} {
+      allow read: if catalogoAutorizado();
+      allow write: if catalogoEditor();
+    }
+
+    // E-mails autorizados no Catálogo (papel leitor/editor) — gerenciado
+    // pelo admin principal direto na tela "Acessos" do app.
+    match /catalogo_authorizedEmails/{email} {
+      allow get: if request.auth != null && (request.auth.token.email == email || catalogoAdminPrincipal());
+      allow list: if catalogoAutorizado();
+      allow write: if catalogoAdminPrincipal();
+    }
+
+    // Pedidos de acesso ao Catálogo. Qualquer logado cria/atualiza só o
+    // próprio pedido (doc id = uid); qualquer autorizado vê a fila; só
+    // o admin principal aprova/recusa.
+    match /catalogo_accessRequests/{uid} {
+      allow get: if request.auth != null && (request.auth.uid == uid || catalogoAutorizado());
+      allow list: if catalogoAutorizado();
+      allow create, update: if request.auth != null && request.auth.uid == uid
+                             && request.resource.data.email == request.auth.token.email;
+      allow delete: if catalogoAdminPrincipal();
+    }
 
     // Nada mais é exposto (RTDB é outro banco e não é afetado por isto).
   }
