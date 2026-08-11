@@ -5,9 +5,13 @@ rules_version = '2';
 // (compartilhado pela Plataforma Acervo Giros e pelo Catálogo
 // Projetos Giros — coleções isoladas por prefixo, sem colisão)
 // ============================================================
-// Leitura livre pra todo mundo (o Catálogo é feito pra ser visto
-// por clientes/terceiros sem login). Escrita só pra quem estiver
-// logado com uma das contas Google autorizadas abaixo.
+// Leitura livre pra todo mundo no Acervo (uso interno da equipe, sem
+// exigir login pra consultar). Escrita só pra quem estiver logado com
+// uma das contas Google autorizadas abaixo.
+//
+// O Catálogo (catalogo_projetos) é diferente: fica restrito também
+// pra LEITURA, já que reúne links/senhas de material de clientes —
+// só quem estiver logado com conta autorizada consegue ler.
 //
 // Obs.: o Firestore não permite prefixo em path (ex.: acervo_{x}),
 // por isso cada coleção é listada explicitamente.
@@ -42,7 +46,9 @@ service cloud.firestore {
     match /acervo_organizacaoProjetosFaltantes/{document=**} { allow read: if true; allow write: if emailAutorizado(); }
 
     // Catálogo Projetos Giros — mesmo projeto Firebase, coleção isolada.
-    match /catalogo_projetos/{document=**} { allow read: if true; allow write: if emailAutorizado(); }
+    // Restrito (leitura E escrita) — ao contrário do Acervo, aqui nem
+    // a leitura é livre: só conta Google autorizada.
+    match /catalogo_projetos/{document=**} { allow read, write: if emailAutorizado(); }
 
     // Nada mais é exposto (RTDB é outro banco e não é afetado por isto).
   }
