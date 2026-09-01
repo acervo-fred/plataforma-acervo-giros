@@ -12,7 +12,16 @@ import { usuarioAtual } from "../data/auth.js";
 const PALETA = ["gray", "blue", "amber", "green", "violet", "rose", "teal", "slate"];
 const CORVAR = (c) => `var(--c-${c}-fg)`;
 
-// categorias na ordem de exibição: { chave, titulo, colorida }
+// ícones disponíveis pros tipos de mídia (arquivos em icones/)
+const ICONES_MIDIA = [
+  { arquivo: "Hd mesa.png", label: "HDD de mesa" },
+  { arquivo: "Lacie antigo prata.png", label: "LaCie prata" },
+  { arquivo: "Lacie antigo borracha.png", label: "LaCie borracha" },
+  { arquivo: "LTO.png", label: "LTO" },
+  { arquivo: "HD outros.png", label: "Genérico" },
+];
+
+// categorias na ordem de exibição: { chave, titulo, colorida, icones }
 const CATEGORIAS = [
   { chave: "statusProjeto", titulo: "Status de projeto", colorida: true },
   { chave: "atividadeAtual", titulo: "Atividade atual", colorida: false },
@@ -20,7 +29,7 @@ const CATEGORIAS = [
   { chave: "statusDemanda", titulo: "Status de demanda", colorida: true },
   { chave: "prioridade", titulo: "Prioridades", colorida: true, hint: "Demandas" },
   { chave: "tipoMaterial", titulo: "Tipos de material", colorida: false, hint: "Pastas das mídias" },
-  { chave: "tipoMidia", titulo: "Tipos de mídia", colorida: false },
+  { chave: "tipoMidia", titulo: "Tipos de mídia", colorida: false, icones: true, hint: "Ícone de cada tipo" },
   { chave: "acao", titulo: "Tipos de ação", colorida: false, hint: "Histórico" },
   { chave: "responsaveis", titulo: "Responsáveis", colorida: false, hint: "Demandas" },
   { chave: "locais", titulo: "Locais", colorida: false, hint: "Onde está a mídia" },
@@ -70,11 +79,11 @@ function desenhaCard(grid, cat, listas) {
   const editandoEsta = editando && editando.chave === cat.chave;
 
   const linhas = itens.map((it, i) => {
-    if (editandoEsta && editando.index === i) return linhaEdicao(cat, valorDe(it), corDe(it));
+    if (editandoEsta && editando.index === i) return linhaEdicao(cat, valorDe(it), corDe(it), iconeDe(it));
     return linhaItem(cat, it, i);
   }).join("");
 
-  const linhaNova = editandoEsta && editando.index === -1 ? linhaEdicao(cat, "", PALETA[0]) : "";
+  const linhaNova = editandoEsta && editando.index === -1 ? linhaEdicao(cat, "", PALETA[0], ICONES_MIDIA[0].arquivo) : "";
   const podeAdicionar = !editandoEsta || editando.index !== -1;
 
   card.innerHTML = `
@@ -131,6 +140,14 @@ function ligaEdicao(formEl, grid, cat, listas) {
     })
   );
 
+  // seleção de ícone
+  formEl.querySelectorAll(".icon-pick").forEach((ic) =>
+    ic.addEventListener("click", () => {
+      formEl.querySelectorAll(".icon-pick").forEach((s) => s.classList.remove("sel"));
+      ic.classList.add("sel");
+    })
+  );
+
   async function salvar() {
     const valor = input.value.trim();
     if (!valor) { input.focus(); return; }
@@ -144,6 +161,9 @@ function ligaEdicao(formEl, grid, cat, listas) {
     if (cat.colorida) {
       const cor = formEl.querySelector(".swatch-pick.sel")?.dataset.cor || PALETA[0];
       novoItem = { valor, cor };
+    } else if (cat.icones) {
+      const icone = formEl.querySelector(".icon-pick.sel")?.dataset.icone || ICONES_MIDIA[0].arquivo;
+      novoItem = { valor, icone };
     } else {
       novoItem = valor;
     }
@@ -169,10 +189,13 @@ function ligaEdicao(formEl, grid, cat, listas) {
 /* ---------- helpers de render ---------- */
 function valorDe(it) { return typeof it === "string" ? it : it.valor; }
 function corDe(it) { return typeof it === "string" ? null : it.cor; }
+function iconeDe(it) { return typeof it === "string" ? null : it.icone; }
 
 function linhaItem(cat, it, i) {
   const swatch = cat.colorida
     ? `<span class="cfg-swatch" style="background:${CORVAR(corDe(it) || "gray")}"></span>`
+    : cat.icones
+    ? `<img class="cfg-icone-thumb" src="icones/${esc(iconeDe(it) || "HD outros.png")}" alt="" />`
     : "";
   return `<div class="cfg-item">
     ${swatch}
@@ -184,15 +207,22 @@ function linhaItem(cat, it, i) {
   </div>`;
 }
 
-function linhaEdicao(cat, valor, corSel) {
+function linhaEdicao(cat, valor, corSel, iconeSel) {
   const swatches = cat.colorida
     ? `<div class="swatch-row">${PALETA.map((c) =>
         `<span class="swatch-pick ${c === corSel ? "sel" : ""}" data-cor="${c}"
            style="background:${CORVAR(c)}" title="${c}"></span>`).join("")}</div>`
     : "";
+  const iconePicker = cat.icones
+    ? `<div class="icon-pick-row">${ICONES_MIDIA.map((ic) =>
+        `<button type="button" class="icon-pick ${ic.arquivo === iconeSel ? "sel" : ""}" data-icone="${esc(ic.arquivo)}" title="${esc(ic.label)}">
+           <img src="icones/${esc(ic.arquivo)}" alt="${esc(ic.label)}" />
+         </button>`).join("")}</div>`
+    : "";
   return `<div class="cfg-edit">
     <input type="text" value="${esc(valor)}" placeholder="Valor" />
     ${swatches}
+    ${iconePicker}
     <span class="cfg-edit-actions">
       <button class="btn btn-primary btn-sm" data-save>Salvar</button>
       <button class="btn btn-ghost btn-sm" data-cancel>Cancelar</button>

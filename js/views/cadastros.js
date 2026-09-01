@@ -30,6 +30,8 @@ function capacidadeParaNumero(str) {
   const m = /([\d.,]+)/.exec(str || "");
   return m ? m[1].replace(",", ".") : "";
 }
+// itens de lista podem ser string simples ou {valor, ...} (cor/ícone)
+function valorDe(it) { return typeof it === "string" ? it : it?.valor; }
 
 /* ---------------- Projeto (criar / editar) ---------------- */
 export async function abrirNovoProjeto(existente = null) {
@@ -90,7 +92,7 @@ export async function abrirNovaMidia(existente = null, { projetoIdFixo = null } 
     bodyHtml: `
       ${fieldText("nome", "Nome da mídia", { required: true, value: m.nome || "", placeholder: "Ex.: HD_IMORTAIS_03" })}
       <div class="field-2col">
-        ${fieldSelect("tipo", "Tipo", listas.tipoMidia, { value: m.tipo || listas.tipoMidia[0] })}
+        ${fieldSelect("tipo", "Tipo", listas.tipoMidia, { value: m.tipo || valorDe(listas.tipoMidia[0]) })}
         ${fieldText("capacidade", "Capacidade (TB)", { type: "number", value: capacidadeParaNumero(m.capacidade), placeholder: "Ex.: 8" })}
       </div>
       <div class="field-2col">

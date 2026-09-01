@@ -6,9 +6,9 @@ import { store } from "../data/store.js";
 import { esc, formatAno, toast } from "../ui/dom.js";
 import { badgeFromLista, corDoValor } from "../ui/badges.js";
 import { abrirNovaMidia, abrirNovaEstrutura } from "./cadastros.js";
-import { openModal, fieldTextarea, readValue } from "../ui/modal.js";
+import { openModal, fieldText, fieldTextarea, readValue } from "../ui/modal.js";
 import { suportaSelecaoPastas } from "../ui/pasta-tree.js";
-import { gerarListaArquivos, baixarTxt } from "../ui/lista-arquivos.js";
+import { gerarListaArquivos, baixarTxt, TAMANHO_SEGURO_FIRESTORE } from "../ui/lista-arquivos.js";
 import { usuarioAtual } from "../data/auth.js";
 
 const CORVAR = {
@@ -112,7 +112,7 @@ export async function renderMidia(app, id) {
       location.hash = "#/midias";
     },
     "nova-pasta": () => abrirNovaEstrutura({ midiaIdFixo: midia.id }),
-    "gerar-lista": (btn) => gerarEPersistirLista(midia, btn),
+    "gerar-lista": (btn) => abrirOpcoesGerarLista(midia, btn),
     "ver-lista": () => abrirListaArquivos(midia),
   };
   app.querySelectorAll("[data-act]").forEach((btn) =>
@@ -158,6 +158,25 @@ function estruturaRowMidia(e) {
 }
 
 function listaArquivosRow(midia) {
+  // gerada, mas grande demais pra guardar no documento da mídia (limite
+  // de 1MB do Firestore) — só as estatísticas ficaram salvas; o .txt já
+  // foi baixado na hora da geração. Depende do campo explícito (e não
+  // só da ausência de listaArquivos) pra não confundir com mídias
+  // antigas cujo texto ficou vazio por outro motivo, sem relação com
+  // tamanho.
+  if (midia.listaArquivosMuitoGrande) {
+    const data = midia.listaArquivosGeradoEm
+      ? new Date(midia.listaArquivosGeradoEm).toLocaleDateString("pt-BR")
+      : "—";
+    const resumo = [`${midia.listaArquivosArquivos} arquivos`, `${midia.listaArquivosPastas} pastas`].join(" · ");
+    return `<div class="list-row">
+      <div class="lr-main">
+        <div class="lr-title">Lista gerada em ${esc(data)} <span class="muted" style="font-weight:400">— grande demais pra guardar na plataforma</span></div>
+        <div class="lr-sub">${esc(resumo)} · baixada como .txt na hora. Gere de novo pra baixar outra cópia.</div>
+      </div>
+      <button class="btn btn-primary edit-only" data-act="gerar-lista" ${suportaSelecaoPastas() ? "" : "disabled"}>Gerar de novo</button>
+    </div>`;
+  }
   if (!midia.listaArquivos) {
     return `<div class="list-row">
       <div class="lr-main">
@@ -183,22 +202,50 @@ function listaArquivosRow(midia) {
   </div>`;
 }
 
-async function gerarEPersistirLista(midia, btn) {
+// pequeno modal só pra escolher o filtro de tamanho antes de escanear
+function abrirOpcoesGerarLista(midia, btn) {
+  const modal = openModal({
+    title: "Gerar lista de arquivos",
+    subtitle: midia.nome,
+    submitLabel: "Escolher pasta e escanear",
+    bodyHtml: fieldText("minKb", "Ignorar arquivos menores que (KB)", {
+      type: "number", value: "0",
+      hint: "As pastas sempre entram inteiras na lista — isso só omite arquivos pequenos (proxies, sequências de frames etc). Deixe 0 pra listar todos os arquivos.",
+    }),
+    onSubmit: async (form) => {
+      const minBytes = Math.max(0, Number(readValue(form, "minKb")) || 0) * 1024;
+      modal.close();
+      await gerarEPersistirLista(midia, btn, minBytes);
+    },
+  });
+}
+
+async function gerarEPersistirLista(midia, btn, minBytes = 0) {
   const textoOriginal = btn.textContent;
   btn.disabled = true;
   btn.textContent = "Escaneando…";
   try {
-    const resultado = await gerarListaArquivos();
+    const resultado = await gerarListaArquivos({ minBytes });
     if (!resultado) return; // cancelado na escolha da pasta
     const campos = {
-      listaArquivos: resultado.texto,
       listaArquivosGeradoEm: new Date().toISOString(),
       listaArquivosArquivos: resultado.arquivos,
       listaArquivosPastas: resultado.pastas,
+      listaArquivosMuitoGrande: resultado.grandeDemaisPraSalvar,
+      // texto grande demais pro documento da mídia (limite de 1MB do
+      // Firestore) não é gravado — só as estatísticas acima
+      listaArquivos: resultado.grandeDemaisPraSalvar ? "" : resultado.texto,
     };
     Object.assign(midia, campos);
     await store.updateMidia(midia.id, campos);
-    if (resultado.truncado) toast("Mídia com muitos itens — a lista mostra só os primeiros.");
+    if (resultado.grandeDemaisPraSalvar) {
+      baixarTxt(`${midia.nome} - lista de arquivos.txt`, resultado.texto);
+      toast("Lista grande demais pra guardar na plataforma — baixada como .txt.");
+    } else if (resultado.truncado) {
+      toast("Mídia com muitos itens — a lista mostra só os primeiros.");
+    } else if (resultado.ignorados) {
+      toast(`${resultado.ignorados} arquivo${resultado.ignorados > 1 ? "s" : ""} pequeno${resultado.ignorados > 1 ? "s" : ""} ignorado${resultado.ignorados > 1 ? "s" : ""} na lista.`);
+    }
     window.dispatchEvent(new CustomEvent("data-changed"));
   } finally {
     btn.disabled = false;
@@ -213,9 +260,14 @@ function abrirListaArquivos(midia) {
     subtitle: midia.nome,
     submitLabel: editor ? "Salvar alterações" : "Fechar",
     bodyHtml: `
-      <div class="toolbar" style="margin-bottom:10px">
+      <div class="toolbar" style="margin-bottom:10px; flex-wrap:wrap; gap:10px">
         <button type="button" class="btn btn-ghost" data-act="baixar">⬇ Baixar .txt</button>
         <button type="button" class="btn btn-ghost edit-only" data-act="regerar">↻ Gerar novamente (substitui)</button>
+        <label class="edit-only" style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-soft)">
+          Ignorar arquivos menores que
+          <input type="number" class="input" id="lf-min-kb" value="0" min="0" style="width:70px" />
+          KB
+        </label>
       </div>
       ${fieldTextarea("texto", "Conteúdo", { value: midia.listaArquivos || "" })}
     `,
@@ -234,12 +286,14 @@ function abrirListaArquivos(midia) {
         btn.disabled = true;
         btn.textContent = "Escaneando…";
         try {
-          const resultado = await gerarListaArquivos();
+          const minKb = Math.max(0, Number(form.querySelector("#lf-min-kb")?.value) || 0);
+          const resultado = await gerarListaArquivos({ minBytes: minKb * 1024 });
           if (!resultado) return; // cancelado na escolha da pasta
           textarea.value = resultado.texto;
           textarea.dataset.arquivos = resultado.arquivos;
           textarea.dataset.pastas = resultado.pastas;
           if (resultado.truncado) toast("Mídia com muitos itens — a lista mostra só os primeiros.");
+          else if (resultado.ignorados) toast(`${resultado.ignorados} arquivo${resultado.ignorados > 1 ? "s" : ""} pequeno${resultado.ignorados > 1 ? "s" : ""} ignorado${resultado.ignorados > 1 ? "s" : ""} na lista.`);
         } finally {
           btn.disabled = false;
           btn.textContent = textoOriginal;
@@ -250,7 +304,10 @@ function abrirListaArquivos(midia) {
       if (!editor) return; // "Fechar" — nada a salvar
       const textarea = form.querySelector("#f_texto");
       const texto = readValue(form, "texto");
-      const campos = { listaArquivos: texto, listaArquivosGeradoEm: new Date().toISOString() };
+      if (new Blob([texto]).size > TAMANHO_SEGURO_FIRESTORE) {
+        throw new Error("Essa lista é grande demais pra guardar na plataforma (passa do limite do banco de dados). Clique em \"Baixar .txt\" antes de fechar — essa versão não vai ficar salva aqui.");
+      }
+      const campos = { listaArquivos: texto, listaArquivosGeradoEm: new Date().toISOString(), listaArquivosMuitoGrande: false };
       if (textarea.dataset.arquivos !== undefined) campos.listaArquivosArquivos = Number(textarea.dataset.arquivos);
       if (textarea.dataset.pastas !== undefined) campos.listaArquivosPastas = Number(textarea.dataset.pastas);
       await store.updateMidia(midia.id, campos);

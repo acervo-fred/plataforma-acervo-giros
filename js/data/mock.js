@@ -32,7 +32,18 @@ export const listas = {
     { valor: "Descartada", cor: "gray" },
   ],
   tipoMaterial: ["Bruto", "Áudio", "Proxy", "Entregável", "Material de arquivo", "Outro"],
-  tipoMidia: ["HDD", "SSD", "NAS", "LTO", "Cartão", "Pendrive"],
+  // cada tipo pode ter um ícone associado (editável em Configurações);
+  // "icone" é o nome do arquivo em icones/ — some com "HD outros.png"
+  tipoMidia: [
+    { valor: "HDD (mesa)", icone: "Hd mesa.png" },
+    { valor: "HDD (lacie prata)", icone: "Lacie antigo prata.png" },
+    { valor: "HDD (lacie borracha)", icone: "Lacie antigo borracha.png" },
+    { valor: "LTO", icone: "LTO.png" },
+    { valor: "SSD", icone: "HD outros.png" },
+    { valor: "NAS", icone: "HD outros.png" },
+    { valor: "Cartão", icone: "HD outros.png" },
+    { valor: "Pendrive", icone: "HD outros.png" },
+  ],
   acao: ["Catalogando", "Copiando", "Conferindo", "Gerando Proxy", "Gravando LTO", "Outra"],
   prioridade: [
     { valor: "Alta", cor: "rose" },

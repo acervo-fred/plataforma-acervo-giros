@@ -1,11 +1,13 @@
 /* Detalhe do Projeto — tudo sobre um projeto numa tela só:
-   dados mestre, Mídias, Estrutura (agrupada por mídia), Histórico, Pendências.
+   dados mestre, Mídias (em ícones — a estrutura de pastas de cada uma
+   fica na tela da própria mídia), Fitas, Histórico, Pendências.
    Inclui editar/excluir do projeto e de cada item das listas. */
 
 import { store } from "../data/store.js";
 import { esc, formatAno, ordenarDemandas, compararNomes } from "../ui/dom.js";
 import { badgeFromLista } from "../ui/badges.js";
-import { abrirNovoProjeto, abrirNovaMidia, abrirNovaEstrutura, abrirNovoHistorico, abrirNovaDemanda } from "./cadastros.js";
+import { iconeMidia } from "../ui/icons.js";
+import { abrirNovoProjeto, abrirNovaMidia, abrirNovoHistorico, abrirNovaDemanda } from "./cadastros.js";
 
 export async function renderProjeto(app, id) {
   const projeto = await store.getProjeto(id);
@@ -15,9 +17,8 @@ export async function renderProjeto(app, id) {
     return;
   }
 
-  const [listas, estrutura, midias, historico, demandasBrutas, fitas] = await Promise.all([
+  const [listas, midias, historico, demandasBrutas, fitas] = await Promise.all([
     store.getListas(),
-    store.estruturaDoProjeto(id),
     store.midiasDoProjeto(id),
     store.historicoDoProjeto(id),
     store.demandasDoProjeto(id),
@@ -25,7 +26,6 @@ export async function renderProjeto(app, id) {
   ]);
   const demandas = ordenarDemandas(demandasBrutas, listas.prioridade);
 
-  const midiaMap = Object.fromEntries(midias.map((m) => [m.id, m]));
   const totalTB = midias.filter((m) => m.tipo !== "LTO").reduce((s, m) => s + parseTB(m.capacidade), 0);
   const totalLTO = midias.filter((m) => m.tipo === "LTO").reduce((s, m) => s + parseTB(m.capacidade), 0);
   const totalTexto = fmtTB(totalTB) + (totalLTO ? ` + ${fmtTB(totalLTO)} em LTO` : "");
@@ -40,6 +40,7 @@ export async function renderProjeto(app, id) {
       </div>
       <div class="row-end">
         ${badgeFromLista(listas.statusProjeto, projeto.statusProjeto)}
+        <a class="btn btn-ghost" href="#/protocolo/${esc(projeto.id)}">Protocolo: Arquivamento e Backup</a>
         <button class="btn edit-only" data-act="editar">Editar</button>
         <button class="btn btn-ghost edit-only" data-act="excluir" title="Excluir projeto"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
       </div>
@@ -52,34 +53,22 @@ export async function renderProjeto(app, id) {
         ? `<div class="tags">${projeto.lto.map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>`
         : "—")}
       ${metaCell(
-        `Localizações <span class="loc-total-inline">(${midias.length} · ${totalTexto})</span>`,
+        "Localizações",
         midias.length
-          ? `<div class="loc-list">${[...midias].sort((a, b) => compararNomes(a.nome, b.nome)).map((m) => `
-              <div class="loc-list-item">
-                <a href="#/midia/${esc(m.id)}" class="loc-nome" title="${esc(m.nome)}">${esc(m.nome)}</a>
-                <span class="loc-cap">${esc(m.capacidade || "—")}</span>
-              </div>`).join("")}</div>`
-          : `<span class="muted">nenhuma mídia</span>`,
-        "meta-cell--loc"
+          ? `${midias.length} mídia${midias.length > 1 ? "s" : ""} · ${[...midias]
+              .sort((a, b) => compararNomes(a.nome, b.nome))
+              .map((m) => esc(m.capacidade || "—")).join(" + ")} = ${esc(totalTexto)}`
+          : `<span class="muted">nenhuma mídia</span>`
       )}
     </div>
 
     <!-- MÍDIAS -->
     <section class="section">
-      <div class="section-head"><h2>Mídias <span class="section-hint">mídias que contêm este projeto</span></h2>
+      <div class="section-head"><h2>Mídias <span class="section-hint">clique numa mídia pra ver a estrutura de pastas dela</span></h2>
         <button class="btn btn-ghost edit-only" data-act="nova-midia">+ Nova mídia</button></div>
-      <div class="list-card" id="midias">
-        ${midias.length ? midias.map((m) => midiaRow(m, listas, projeto.id)).join("")
+      <div class="midia-grid" id="midias">
+        ${midias.length ? midias.map((m) => midiaCard(m, listas, projeto.id)).join("")
           : `<div class="empty">Nenhuma mídia contém este projeto.</div>`}
-      </div>
-    </section>
-
-    <!-- ESTRUTURA (agrupada por mídia) -->
-    <section class="section">
-      <div class="section-head"><h2>Estrutura de pastas <span class="section-hint">pastas de cada mídia deste projeto</span></h2>
-        <button class="btn btn-ghost edit-only" data-act="nova-pasta">+ Nova pasta</button></div>
-      <div id="estrutura-grupos">
-        ${estruturaAgrupada(estrutura, midiaMap)}
       </div>
     </section>
 
@@ -129,8 +118,6 @@ export async function renderProjeto(app, id) {
       location.hash = "#/";
     },
     "nova-midia": () => abrirNovaMidia(null, { projetoIdFixo: projeto.id }),
-    "nova-pasta": () => abrirNovaEstrutura({ projetoIdFixo: projeto.id }),
-    "nova-pasta-grupo": (btn) => abrirNovaEstrutura({ projetoIdFixo: projeto.id, midiaIdFixo: btn.dataset.midia }),
     "novo-historico": () => abrirNovoHistorico({ projetoIdFixo: projeto.id }),
     "nova-demanda": () => abrirNovaDemanda(projeto.id),
   };
@@ -139,9 +126,6 @@ export async function renderProjeto(app, id) {
   );
 
   // editar/excluir itens das listas
-  ligaItens(app, "e", estrutura,
-    (rec) => abrirNovaEstrutura({ projetoIdFixo: projeto.id }, rec),
-    (rec) => [`Excluir a pasta "${rec.caminho}"?`, () => store.removeEstrutura(rec.id)]);
   ligaItens(app, "h", historico,
     (rec) => abrirNovoHistorico({ projetoIdFixo: projeto.id }, rec),
     (rec) => [`Excluir este registro de histórico (${rec.periodo})?`, () => store.removeHistorico(rec.id)]);
@@ -187,62 +171,19 @@ function metaCell(label, valueHtml, extraClass = "") {
   </div>`;
 }
 
-/* Estrutura agrupada por mídia */
-function estruturaAgrupada(estrutura, midiaMap) {
-  if (!estrutura.length) {
-    return `<div class="empty">Nenhuma pasta registrada. Cadastre pela mídia ou clique em "+ Nova pasta".</div>`;
-  }
-
-  const grupos = new Map();
-  for (const e of estrutura) {
-    const key = e.midiaId || "";
-    if (!grupos.has(key)) grupos.set(key, []);
-    grupos.get(key).push(e);
-  }
-
-  return [...grupos.entries()].map(([midiaId, pastas]) => {
-    const midia = midiaMap[midiaId];
-    const label = midia ? midia.nome : (midiaId ? "—" : "Sem mídia");
-    const midiaRef = midia
-      ? `<a href="#/midia/${esc(midiaId)}" class="est-grupo-link">${esc(label)}</a>`
-      : `<span class="muted">${esc(label)}</span>`;
-    const n = pastas.length;
-    return `<div class="est-grupo">
-      <div class="est-grupo-head">
-        ${midiaRef}
-        <span class="est-grupo-count">${n} ${n === 1 ? "pasta" : "pastas"}</span>
-        ${midia ? `<button class="btn btn-ghost est-grupo-add edit-only" data-act="nova-pasta-grupo" data-midia="${esc(midiaId)}">+ pasta</button>` : ""}
-      </div>
-      <div class="list-card">
-        ${pastas.map((p) => estruturaRow(p)).join("")}
-      </div>
-    </div>`;
-  }).join("");
-}
-
-function estruturaRow(e) {
-  return `<div class="list-row">
-    <div class="lr-main">
-      <div class="lr-title">${esc(e.caminho)} <span class="muted" style="font-weight:400">· ${esc(e.tipoMaterial)}</span></div>
-      ${e.resumo ? `<div class="lr-sub">${esc(e.resumo)}</div>` : ""}
-    </div>
-    ${e.arquivadoLto ? `<span class="tag">${esc(e.arquivadoLto)}</span>` : ""}
-    ${acoesRow("e", e.id)}
-  </div>`;
-}
-
-function midiaRow(m, listas, projetoId) {
+function midiaCard(m, listas, projetoId) {
   const n = (m.projetosArmazenados || []).length;
   const resumo = (m.conteudoPorProjeto || {})[projetoId] || "";
-  return `<div class="list-row clickable" data-midia="${esc(m.id)}">
-    <div class="lr-main">
-      <div class="lr-title">${esc(m.nome)} <span class="muted" style="font-weight:400">· ${esc(m.tipo)} · ${esc(m.capacidade)}</span></div>
+  return `<div class="midia-card clickable" data-midia="${esc(m.id)}">
+    <img class="midia-card-icon" src="${esc(iconeMidia(m.tipo, listas))}" alt="${esc(m.tipo)}" loading="lazy">
+    <div class="midia-card-body">
+      <div class="lr-title">${esc(m.nome)}</div>
+      <div class="lr-sub">${esc(m.tipo)} · ${esc(m.capacidade)}</div>
       <div class="lr-sub">${resumo
         ? esc(resumo)
         : `<span class="muted">${n > 1 ? `Contém ${n} projetos` : "Projeto único"}</span>`}</div>
     </div>
     ${badgeFromLista(listas.statusMidia, m.statusMidia)}
-    <span class="muted">›</span>
   </div>`;
 }
 

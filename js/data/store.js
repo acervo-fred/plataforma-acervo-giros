@@ -17,6 +17,7 @@
 
 import * as mock from "./mock.js";
 import { USE_FIRESTORE } from "../config/firebase-config.js";
+import { protocoloZerado, idsFolha } from "./protocolo-arquivamento.js";
 
 const LS_KEY = "acervo-giros-db-v1";
 
@@ -221,6 +222,55 @@ const mockStore = {
     return p ? enrichProjeto(p) : null;
   },
 
+  /* PROTOCOLO DE ARQUIVAMENTO — checklist de organização de pastas */
+  async getProtocolo(projetoId) {
+    const p = db.projetos.find((x) => x.id === projetoId);
+    if (!p) return null;
+    if (!p.protocoloArquivamento) {
+      p.protocoloArquivamento = protocoloZerado();
+      persistir();
+    }
+    return structuredClone(p.protocoloArquivamento);
+  },
+  // campo: "created" | "organized". Regra: organized=true força created=true;
+  // created=false limpa organized também.
+  async setProtocoloItem(projetoId, itemId, campo, valor) {
+    const p = db.projetos.find((x) => x.id === projetoId);
+    if (!p) return false;
+    if (!p.protocoloArquivamento) p.protocoloArquivamento = protocoloZerado();
+    const atual = p.protocoloArquivamento[itemId] || { created: false, organized: false };
+    const patch = campo === "organized"
+      ? (valor ? { organized: true, created: true } : { organized: false })
+      : (valor ? { created: true } : { created: false, organized: false });
+    p.protocoloArquivamento[itemId] = { ...atual, ...patch };
+    persistir();
+    return true;
+  },
+  async setProtocoloNota(projetoId, itemId, texto) {
+    const p = db.projetos.find((x) => x.id === projetoId);
+    if (!p) return false;
+    if (!p.protocoloArquivamento) p.protocoloArquivamento = protocoloZerado();
+    const atual = p.protocoloArquivamento[itemId] || { created: false, organized: false, nota: "" };
+    p.protocoloArquivamento[itemId] = { ...atual, nota: texto };
+    persistir();
+    return true;
+  },
+  // aplica o mesmo campo/valor (e a mesma regra de negócio) a todo item-folha
+  async setProtocoloTodos(projetoId, campo, valor) {
+    const p = db.projetos.find((x) => x.id === projetoId);
+    if (!p) return false;
+    if (!p.protocoloArquivamento) p.protocoloArquivamento = protocoloZerado();
+    const patch = campo === "organized"
+      ? (valor ? { organized: true, created: true } : { organized: false })
+      : (valor ? { created: true } : { created: false, organized: false });
+    for (const id of idsFolha()) {
+      const atual = p.protocoloArquivamento[id] || { created: false, organized: false, nota: "" };
+      p.protocoloArquivamento[id] = { ...atual, ...patch };
+    }
+    persistir();
+    return true;
+  },
+
   /* MÍDIAS */
   async listMidias() {
     return structuredClone(db.midias);
@@ -308,6 +358,7 @@ const mockStore = {
       atividadeAtual: dados.atividadeAtual,
       alfred: dados.alfred,
       lto: dados.lto || [],
+      protocoloArquivamento: protocoloZerado(),
     };
     db.projetos.push(novo);
     persistir();

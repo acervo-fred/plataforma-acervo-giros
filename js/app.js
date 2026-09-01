@@ -15,6 +15,7 @@ import { renderDashboard } from "./views/dashboard.js";
 import { renderConfig } from "./views/config.js";
 import { renderAdmin } from "./views/admin.js";
 import { renderOrganizacao } from "./views/organizacao.js";
+import { renderProtocolo } from "./views/protocolo.js";
 import { renderFitasLista } from "./views/fitas-list.js";
 import { esc, toast, compararNomes } from "./ui/dom.js";
 import { iconClock, iconAlert } from "./ui/icons.js";
@@ -97,6 +98,10 @@ async function router() {
       case "organizacao":
         setActiveNav("organizacao");
         await renderOrganizacao(app, param);
+        break;
+      case "protocolo":
+        setActiveNav("protocolo");
+        await renderProtocolo(app, param);
         break;
       default:
         placeholder("Página não encontrada", "Verifique o endereço.");

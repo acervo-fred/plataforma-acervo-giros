@@ -9,11 +9,12 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs, getDocsFromServer,
-  addDoc, setDoc, updateDoc, deleteDoc, query, where,
+  addDoc, setDoc, updateDoc, deleteDoc, query, where, FieldPath,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import { firebaseConfig, COLLECTIONS } from "../config/firebase-config.js";
 import { listas as listasDefault, organizacaoGlossario as glossarioDefault } from "./mock.js";
+import { protocoloZerado, idsFolha } from "./protocolo-arquivamento.js";
 
 const app = initializeApp(firebaseConfig);
 const fdb = getFirestore(app);
@@ -135,6 +136,56 @@ export const firestoreStore = {
     return { ...p, localizacoes: localizacoesDeProjeto(id, midias), ultimaAtualizacao: ultimaAtualizacao(id, historico) };
   },
 
+  /* PROTOCOLO DE ARQUIVAMENTO — checklist de organização de pastas */
+  async getProtocolo(projetoId) {
+    const ref = doc(fdb, COLLECTIONS.projetos, projetoId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    const existente = snap.data().protocoloArquivamento;
+    if (existente) return existente;
+    // projeto anterior a este recurso — inicializa zerado na primeira visita
+    const zerado = protocoloZerado();
+    await updateDoc(ref, { protocoloArquivamento: zerado });
+    return zerado;
+  },
+  // campo: "created" | "organized". Regra: organized=true força created=true;
+  // created=false limpa organized também. Grava só o item tocado (FieldPath,
+  // porque os ids como "11.1.1" têm ponto — uma string "a.b.c" seria lida
+  // como aninhamento, não como chave literal).
+  async setProtocoloItem(projetoId, itemId, campo, valor) {
+    const ref = doc(fdb, COLLECTIONS.projetos, projetoId);
+    const patch = campo === "organized"
+      ? (valor ? { organized: true, created: true } : { organized: false })
+      : (valor ? { created: true } : { created: false, organized: false });
+    const args = [];
+    for (const [k, v] of Object.entries(patch)) {
+      args.push(new FieldPath("protocoloArquivamento", itemId, k), v);
+    }
+    await updateDoc(ref, ...args);
+    return true;
+  },
+  async setProtocoloNota(projetoId, itemId, texto) {
+    const ref = doc(fdb, COLLECTIONS.projetos, projetoId);
+    await updateDoc(ref, new FieldPath("protocoloArquivamento", itemId, "nota"), texto);
+    return true;
+  },
+  // aplica o mesmo campo/valor (e a mesma regra de negócio) a todo item-folha,
+  // numa única escrita
+  async setProtocoloTodos(projetoId, campo, valor) {
+    const patch = campo === "organized"
+      ? (valor ? { organized: true, created: true } : { organized: false })
+      : (valor ? { created: true } : { created: false, organized: false });
+    const ref = doc(fdb, COLLECTIONS.projetos, projetoId);
+    const args = [];
+    for (const id of idsFolha()) {
+      for (const [k, v] of Object.entries(patch)) {
+        args.push(new FieldPath("protocoloArquivamento", id, k), v);
+      }
+    }
+    await updateDoc(ref, ...args);
+    return true;
+  },
+
   /* MÍDIAS */
   async listMidias() { return allDocs(COLLECTIONS.midias); },
   async getMidia(id) {
@@ -215,6 +266,7 @@ export const firestoreStore = {
     const ref = await addDoc(collection(fdb, COLLECTIONS.projetos), {
       nome: d.nome, ano: d.ano, statusProjeto: d.statusProjeto,
       atividadeAtual: d.atividadeAtual, alfred: d.alfred, lto: d.lto || [],
+      protocoloArquivamento: protocoloZerado(),
     });
     return { id: ref.id, ...d };
   },

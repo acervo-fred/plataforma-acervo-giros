@@ -7,6 +7,7 @@
 import { store } from "../data/store.js";
 import { esc } from "../ui/dom.js";
 import { badgeFromLista, corDoValor } from "../ui/badges.js";
+import { idsFolha } from "../data/protocolo-arquivamento.js";
 
 export async function renderDashboard(app) {
   const [projetos, midias, demandas, fitas, listas] = await Promise.all([
@@ -26,16 +27,31 @@ export async function renderDashboard(app) {
   const midiasMistura = midias.filter((m) => (m.projetosArmazenados || []).length > 1).length;
 
   // ---- contagens p/ gráficos ----
+  const valoresTipoMidia = listas.tipoMidia.map((t) => (typeof t === "string" ? t : t.valor));
   const porStatus = contar(listas.statusProjeto.map((s) => s.valor), projetos.map((p) => p.statusProjeto));
-  const porTipo = contar(listas.tipoMidia, midias.map((m) => m.tipo));
+  const porTipo = contar(valoresTipoMidia, midias.map((m) => m.tipo));
 
   // ---- armazenamento por tipo (TB) ----
-  const armPorTipo = somarCapacidade(listas.tipoMidia, midias);
+  const armPorTipo = somarCapacidade(valoresTipoMidia, midias);
 
   // ---- progresso de catalogação ----
   const catalogados = projetos.filter((p) => p.statusProjeto === "Catalogado" || p.statusProjeto === "Finalizado" || p.statusProjeto === "Arquivado").length;
   const emProcesso = projetos.filter((p) => p.statusProjeto === "Catalogando").length;
   const naoCatalogados = totalProjetos - catalogados - emProcesso;
+
+  // ---- progresso de arquivamento (consolidado — soma o checklist do
+  // Protocolo de todos os projetos, item por item) ----
+  const foldersProtocolo = idsFolha();
+  let arqOrganizadas = 0, arqCriadas = 0, arqTotalItens = 0;
+  for (const p of projetos) {
+    const dados = p.protocoloArquivamento || {};
+    for (const id of foldersProtocolo) {
+      arqTotalItens++;
+      if (dados[id]?.organized) arqOrganizadas++;
+      else if (dados[id]?.created) arqCriadas++;
+    }
+  }
+  const arqNaoIniciadas = arqTotalItens - arqOrganizadas - arqCriadas;
 
   // ---- fitas ----
   const totalFitas = fitas.length;
@@ -63,6 +79,11 @@ export async function renderDashboard(app) {
     <div class="chart-card" style="margin-bottom:24px">
       <h3>Progresso de catalogação</h3>
       ${progressoCatalogacao(catalogados, emProcesso, naoCatalogados, totalProjetos)}
+    </div>
+
+    <div class="chart-card" style="margin-bottom:24px">
+      <h3>Progresso de Arquivamento <span class="section-hint">todos os projetos, pasta por pasta</span></h3>
+      ${progressoArquivamento(arqOrganizadas, arqCriadas, arqNaoIniciadas, arqTotalItens, totalProjetos)}
     </div>
 
     <div class="dash-cols">
@@ -196,6 +217,32 @@ function progressoCatalogacao(catalogados, emProcesso, nao, total) {
       <span class="prog-leg-item"><span class="prog-dot" style="background:var(--c-gray-bg)"></span> <strong>Não catalogado</strong> · ${nao} (${pctNao}%)</span>
     </div>
     <div style="margin-top:10px;font-size:13px;color:var(--text-soft)">Total: ${total} projetos</div>`;
+}
+
+// mesma lógica de 3 estados da catalogação, mas em vez de cada projeto
+// ter 1 status discreto, cada um contribui uma fração (pastas
+// organizadas/criadas do seu checklist de 31 itens) — as barras somam
+// essas frações e mostram tudo em "equivalente de projetos", nunca em
+// contagem de pastas
+function progressoArquivamento(organizadas, criadas, nao, totalItens, totalProjetos) {
+  if (!totalProjetos) return `<div class="empty">Sem projetos.</div>`;
+  const pctDone = Math.round((organizadas / totalItens) * 100);
+  const pctProc = Math.round((criadas / totalItens) * 100);
+  const pctNao = 100 - pctDone - pctProc;
+  const itensPorProjeto = totalItens / totalProjetos;
+  const eq = (n) => (n / itensPorProjeto).toFixed(1);
+  return `
+    <div class="prog-bar">
+      ${pctDone ? `<div class="prog-seg prog-done" style="width:${pctDone}%"></div>` : ""}
+      ${pctProc ? `<div class="prog-seg prog-proc" style="width:${pctProc}%"></div>` : ""}
+      ${pctNao ? `<div class="prog-seg prog-nao" style="width:${pctNao}%"></div>` : ""}
+    </div>
+    <div class="prog-legend">
+      <span class="prog-leg-item"><span class="prog-dot" style="background:var(--c-green-fg)"></span> <strong>Organizada</strong> · ${eq(organizadas)} de ${totalProjetos} projetos (${pctDone}%)</span>
+      <span class="prog-leg-item"><span class="prog-dot prog-dot-check"></span> <strong>Criada, não organizada</strong> · ${eq(criadas)} de ${totalProjetos} projetos (${pctProc}%)</span>
+      <span class="prog-leg-item"><span class="prog-dot" style="background:var(--c-gray-bg)"></span> <strong>Não iniciada</strong> · ${eq(nao)} de ${totalProjetos} projetos (${pctNao}%)</span>
+    </div>
+    <div style="margin-top:10px;font-size:13px;color:var(--text-soft)">Total: ${totalProjetos} projetos</div>`;
 }
 
 function fitaVHS(digitalizadas, emProcesso, total) {
