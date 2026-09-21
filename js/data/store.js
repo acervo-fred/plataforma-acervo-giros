@@ -355,9 +355,11 @@ const mockStore = {
       nome: dados.nome,
       ano: dados.ano,
       statusProjeto: dados.statusProjeto,
-      atividadeAtual: dados.atividadeAtual,
-      alfred: dados.alfred,
-      lto: dados.lto || [],
+      formato: dados.formato || "Longa-metragem",
+      temporadas: dados.temporadas || null,
+      episodios: dados.episodios || null,
+      capa: dados.capa || "",
+      linksExternos: dados.linksExternos || [],
       protocoloArquivamento: protocoloZerado(),
     };
     db.projetos.push(novo);
@@ -370,6 +372,7 @@ const mockStore = {
       nome: dados.nome,
       tipo: dados.tipo,
       capacidade: dados.capacidade || "",
+      usado: dados.usado || "",
       statusMidia: dados.statusMidia,
       local: dados.local || "",
       projetosArmazenados: dados.projetosArmazenados || [],

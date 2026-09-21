@@ -15,10 +15,9 @@
 export const listas = {
   statusProjeto: [
     { valor: "Não iniciado", cor: "gray" },
-    { valor: "Catalogando", cor: "amber" },
-    { valor: "Catalogado", cor: "blue" },
-    { valor: "Arquivado", cor: "violet" },
-    { valor: "Finalizado", cor: "green" },
+    { valor: "Catalogando", cor: "blue" },
+    { valor: "Ativo", cor: "amber" },
+    { valor: "Completo", cor: "green" },
   ],
   atividadeAtual: [
     "Sem atividade", "Catalogando", "Copiando",
@@ -71,12 +70,12 @@ export const listas = {
 };
 
 export const projetos = [
-  { id: "p1", nome: "Imortais", ano: 2024, statusProjeto: "Catalogando", atividadeAtual: "Catalogando", alfred: "Bruto", lto: ["LTO-014"] },
-  { id: "p2", nome: "Revolta dos Males", ano: 2023, statusProjeto: "Catalogado", atividadeAtual: "Sem atividade", alfred: "Bruto + Proxy", lto: ["LTO-009", "LTO-010"] },
-  { id: "p3", nome: "Mar de Dentro", ano: 2025, statusProjeto: "Não iniciado", atividadeAtual: "Sem atividade", alfred: "Não", lto: [] },
-  { id: "p4", nome: "O Último Verão", ano: 2022, statusProjeto: "Finalizado", atividadeAtual: "Sem atividade", alfred: "Bruto + Proxy", lto: ["LTO-003"] },
-  { id: "p5", nome: "Cidade Cinza", ano: 2024, statusProjeto: "Arquivado", atividadeAtual: "Gravando LTO", alfred: "Proxy", lto: ["LTO-012"] },
-  { id: "p6", nome: "Travessia", ano: 2025, statusProjeto: "Catalogando", atividadeAtual: "Copiando", alfred: "Não", lto: [] },
+  { id: "p1", nome: "Imortais", ano: 2024, statusProjeto: "Catalogando", formato: "Longa-metragem" },
+  { id: "p2", nome: "Revolta dos Males", ano: 2023, statusProjeto: "Completo", formato: "Série", temporadas: 1, episodios: 8 },
+  { id: "p3", nome: "Mar de Dentro", ano: 2025, statusProjeto: "Não iniciado", formato: "Longa-metragem" },
+  { id: "p4", nome: "O Último Verão", ano: 2022, statusProjeto: "Completo", formato: "Longa-metragem" },
+  { id: "p5", nome: "Cidade Cinza", ano: 2024, statusProjeto: "Ativo", formato: "Série", temporadas: 2, episodios: 16 },
+  { id: "p6", nome: "Travessia", ano: 2025, statusProjeto: "Catalogando", formato: "Longa-metragem" },
 ];
 
 export const midias = [

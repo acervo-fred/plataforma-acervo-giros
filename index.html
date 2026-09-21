@@ -17,41 +17,59 @@
       </a>
 
       <nav class="side-nav">
-        <div class="side-group" id="sg-projetos">
-          <div class="side-group-head">
-            <a href="#/" data-nav="projetos"><span class="ni-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg></span> Projetos</a>
-            <button type="button" class="sg-caret-btn" aria-label="Expandir projetos">›</button>
-          </div>
-          <div class="sg-list" id="sg-list-projetos"></div>
+
+        <!-- ===== Dashboard (sem grupo) ===== -->
+        <div class="nav-group">
+          <a href="#/dashboard" data-nav="dashboard"><span class="ni-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span> Dashboard</a>
         </div>
-        <div class="side-group" id="sg-midias">
-          <div class="side-group-head">
-            <a href="#/midias" data-nav="midias"><span class="ni-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></svg></span> Mídias</a>
-            <button type="button" class="sg-caret-btn" aria-label="Expandir mídias">›</button>
+
+        <!-- ===== Acervo ===== -->
+        <div class="nav-group">
+          <div class="nav-group-label">Acervo</div>
+          <div class="side-group" id="sg-projetos">
+            <div class="side-group-head">
+              <a href="#/" data-nav="projetos"><span class="ni-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg></span> Projetos</a>
+              <button type="button" class="sg-caret-btn" aria-label="Expandir projetos">›</button>
+            </div>
+            <div class="sg-list" id="sg-list-projetos"></div>
           </div>
-          <div class="sg-list" id="sg-list-midias"></div>
+          <div class="side-group" id="sg-midias">
+            <div class="side-group-head">
+              <a href="#/midias" data-nav="midias"><span class="ni-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></svg></span> Mídias</a>
+              <button type="button" class="sg-caret-btn" aria-label="Expandir mídias">›</button>
+            </div>
+            <div class="sg-list" id="sg-list-midias"></div>
+          </div>
+          <a href="#/fitas" data-nav="fitas"><span class="ni-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></span> Fitas</a>
         </div>
-        <a href="#/fitas" data-nav="fitas"><span class="ni-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></span> Fitas</a>
-        <a href="#/equipe" data-nav="equipe"><span class="ni-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Equipe</a>
-        <a href="#/demandas" data-nav="demandas"><span class="ni-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span> Demandas</a>
-        <a href="#/dashboard" data-nav="dashboard"><span class="ni-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span> Dashboard</a>
+
+        <!-- ===== Fluxo de trabalho ===== -->
+        <div class="nav-group">
+          <div class="nav-group-label">Fluxo de trabalho</div>
+          <a href="#/equipe" data-nav="equipe"><span class="ni-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Equipe</a>
+          <a href="#/demandas" data-nav="demandas"><span class="ni-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span> Demandas</a>
+          <a href="#/protocolo" data-nav="protocolo"><span class="ni-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6a2 2 0 0 1 2 2v1H7V6a2 2 0 0 1 2-2z"/><rect x="5" y="7" width="14" height="14" rx="2"/><path d="m9 14 2 2 4-4"/></svg></span> Arquivamento</a>
+        </div>
+
+        <!-- ===== Fim da sidebar: Organização + Atividade recente, ajustado
+             para a parte de baixo (margin-top:auto no CSS) ===== -->
+        <div class="nav-group nav-group--bottom">
+          <a href="#/organizacao" data-nav="organizacao"><span class="ni-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> Organização</a>
+          <!-- Atividade recente: mesmo drawer de sempre, conteúdo inalterado -->
+          <div class="activity-drawer" id="activity-drawer">
+            <button class="ad-tab" id="ad-tab" type="button">
+              <span class="ad-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+              <span class="ad-label">Atividade recente</span>
+              <span class="ad-caret">›</span>
+            </button>
+            <div class="ad-panel">
+              <div class="ad-head">Atividade recente</div>
+              <div id="ad-list"></div>
+            </div>
+          </div>
+        </div>
       </nav>
 
-      <a href="#/protocolo" data-nav="protocolo" class="side-nav-bottom"><span class="ni-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6a2 2 0 0 1 2 2v1H7V6a2 2 0 0 1 2-2z"/><rect x="5" y="7" width="14" height="14" rx="2"/><path d="m9 14 2 2 4-4"/></svg></span> Arquivamento</a>
-      <a href="#/organizacao" data-nav="organizacao" class="side-nav-bottom"><span class="ni-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> Organização</a>
-
-      <!-- Atividade recente: recolhida, expande no hover/clique -->
-      <div class="activity-drawer" id="activity-drawer">
-        <button class="ad-tab" id="ad-tab" type="button">
-          <span class="ad-ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
-          <span class="ad-label">Atividade recente</span>
-          <span class="ad-caret">›</span>
-        </button>
-        <div class="ad-panel">
-          <div class="ad-head">Atividade recente</div>
-          <div id="ad-list"></div>
-        </div>
-      </div>
     </aside>
 
     <!-- ===== Área principal ===== -->

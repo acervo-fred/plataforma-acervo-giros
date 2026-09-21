@@ -4,7 +4,8 @@
 
 import { store } from "../data/store.js";
 import { esc, formatAno, toast } from "../ui/dom.js";
-import { badgeFromLista, corDoValor } from "../ui/badges.js";
+import { badgeFromLista, corDoValor, chipsProjetos } from "../ui/badges.js";
+import { fmtUso } from "../ui/formato.js";
 import { abrirNovaMidia, abrirNovaEstrutura } from "./cadastros.js";
 import { openModal, fieldText, fieldTextarea, readValue } from "../ui/modal.js";
 import { suportaSelecaoPastas } from "../ui/pasta-tree.js";
@@ -32,6 +33,8 @@ export async function renderMidia(app, id) {
   ]);
 
   const mistura = projetos.length > 1;
+  // join client-side id -> nome, pros chips clicáveis (mesma lógica da lista)
+  const nomePorId = Object.fromEntries(projetos.filter((p) => p.existe).map((p) => [p.id, p.nome]));
 
   app.innerHTML = `
     <a class="back-link" href="#/midias">← Voltar para mídias</a>
@@ -48,17 +51,24 @@ export async function renderMidia(app, id) {
       </div>
     </div>
 
+    <div class="kpi-row">
+      ${kpi("Projetos dentro", String(projetos.length), projetos.length === 1 ? "projeto nesta mídia" : "projetos nesta mídia")}
+      ${kpi("Local", midia.local || "—", "onde a mídia está")}
+      ${kpi("Uso / capacidade total", fmtUso(midia), midia.usado ? "espaço ocupado" : "estimado (90% da capacidade)")}
+    </div>
+
     <div class="meta-grid">
-      ${metaCell("Tipo", esc(midia.tipo))}
-      ${metaCell("Capacidade", esc(midia.capacidade || "—"))}
-      ${metaCell("Status", badgeFromLista(listas.statusMidia, midia.statusMidia))}
-      ${metaCell("Onde está", esc(midia.local || "—"))}
-      ${metaCell("Projetos dentro", String(projetos.length))}
+      ${metaCell(
+        "Projetos vinculados",
+        chipsProjetos(midia.projetosArmazenados || [], nomePorId, { max: 0 }),
+        "meta-cell--wide"
+      )}
     </div>
 
     ${mistura ? `<div class="warn">⚠ Esta mídia contém ${projetos.length} projetos diferentes.</div>` : ""}
 
-    <!-- ESTRUTURA (pastas desta mídia) -->
+    <!-- ESTRUTURA (pastas desta mídia) — recolhível: mostra só as 6
+         primeiras linhas até a pessoa pedir pra ver o resto ---->
     <section class="section">
       <div class="section-head"><h2>Estrutura das Pastas e Arquivos</h2>
         <div class="row-end edit-only">
@@ -67,8 +77,7 @@ export async function renderMidia(app, id) {
         </div>
       </div>
       <div class="list-card" id="estrutura">
-        ${estrutura.length ? estrutura.map((e) => estruturaRowMidia(e)).join("")
-          : `<div class="empty">Nenhuma pasta registrada nesta mídia.</div>`}
+        ${estruturaHtml(estrutura)}
       </div>
     </section>
 
@@ -104,6 +113,17 @@ export async function renderMidia(app, id) {
     if (row && row.dataset.projeto) location.hash = `#/projeto/${row.dataset.projeto}`;
   });
 
+  // "mostrar mais pastas" (estrutura recolhida em 6 linhas)
+  const toggleEst = app.querySelector("#estrutura-toggle");
+  if (toggleEst) {
+    const extra = app.querySelector("#estrutura-extra");
+    const n = Number(toggleEst.dataset.extra);
+    toggleEst.addEventListener("click", () => {
+      extra.hidden = !extra.hidden;
+      toggleEst.textContent = extra.hidden ? `Mostrar mais ${n} pasta${n > 1 ? "s" : ""}` : "Mostrar menos";
+    });
+  }
+
   const acoes = {
     "editar": () => abrirNovaMidia(midia),
     "excluir": async () => {
@@ -136,11 +156,33 @@ export async function renderMidia(app, id) {
   });
 }
 
-function metaCell(label, valueHtml) {
-  return `<div class="meta-cell">
+function metaCell(label, valueHtml, extraClass = "") {
+  return `<div class="meta-cell${extraClass ? ` ${extraClass}` : ""}">
     <div class="meta-label">${label}</div>
     <div class="meta-value">${valueHtml}</div>
   </div>`;
+}
+
+function kpi(label, valor, sub = "") {
+  return `<div class="kpi">
+    <div class="kpi-label">${esc(label)}</div>
+    <div class="kpi-valor" style="font-size:20px">${esc(valor)}</div>
+    ${sub ? `<div class="kpi-sub">${esc(sub)}</div>` : ""}
+  </div>`;
+}
+
+// mostra só as 6 primeiras pastas; o resto fica num wrapper recolhido,
+// com um botão "mostrar mais" ao final da lista
+const ESTRUTURA_INICIAL = 6;
+function estruturaHtml(estrutura) {
+  if (!estrutura.length) return `<div class="empty">Nenhuma pasta registrada nesta mídia.</div>`;
+  const visivel = estrutura.slice(0, ESTRUTURA_INICIAL);
+  const resto = estrutura.slice(ESTRUTURA_INICIAL);
+  const rows = visivel.map((e) => estruturaRowMidia(e)).join("");
+  if (!resto.length) return rows;
+  return `${rows}
+    <div class="lc-extra" id="estrutura-extra" hidden>${resto.map((e) => estruturaRowMidia(e)).join("")}</div>
+    <button type="button" class="lc-toggle" id="estrutura-toggle" data-extra="${resto.length}">Mostrar mais ${resto.length} pasta${resto.length > 1 ? "s" : ""}</button>`;
 }
 
 function estruturaRowMidia(e) {

@@ -35,7 +35,10 @@ export async function renderDashboard(app) {
   const armPorTipo = somarCapacidade(valoresTipoMidia, midias);
 
   // ---- progresso de catalogação ----
-  const catalogados = projetos.filter((p) => p.statusProjeto === "Catalogado" || p.statusProjeto === "Finalizado" || p.statusProjeto === "Arquivado").length;
+  // "Catalogado"/"Finalizado"/"Arquivado" são nomes antigos do status —
+  // mantidos aqui por compatibilidade com dados que ainda não passaram
+  // pela migração de nomenclatura (ver js/data/migracoes.js)
+  const catalogados = projetos.filter((p) => ["Catalogado", "Completo", "Finalizado", "Arquivado"].includes(p.statusProjeto)).length;
   const emProcesso = projetos.filter((p) => p.statusProjeto === "Catalogando").length;
   const naoCatalogados = totalProjetos - catalogados - emProcesso;
 
@@ -212,7 +215,7 @@ function progressoCatalogacao(catalogados, emProcesso, nao, total) {
       ${pctNao ? `<div class="prog-seg prog-nao" style="width:${pctNao}%"></div>` : ""}
     </div>
     <div class="prog-legend">
-      <span class="prog-leg-item"><span class="prog-dot" style="background:var(--c-green-fg)"></span> <strong>Catalogado</strong> · ${catalogados} (${pctDone}%)</span>
+      <span class="prog-leg-item"><span class="prog-dot" style="background:var(--c-green-fg)"></span> <strong>Completo</strong> · ${catalogados} (${pctDone}%)</span>
       <span class="prog-leg-item"><span class="prog-dot prog-dot-check"></span> <strong>Em catalogação</strong> · ${emProcesso} (${pctProc}%)</span>
       <span class="prog-leg-item"><span class="prog-dot" style="background:var(--c-gray-bg)"></span> <strong>Não catalogado</strong> · ${nao} (${pctNao}%)</span>
     </div>

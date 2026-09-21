@@ -52,6 +52,10 @@
 }
 
 * { box-sizing: border-box; }
+/* garante que o atributo `hidden` sempre esconda, mesmo em elementos
+   com classe (.btn etc.) que já define `display` — sem isto, a regra
+   de UA pro `[hidden]` perde pra qualquer `display` de autor. */
+[hidden] { display: none !important; }
 
 html, body {
   margin: 0;
@@ -71,6 +75,8 @@ a { color: inherit; text-decoration: none; }
 
 .sidebar {
   width: 232px;
+  overflow-y: auto;
+  scrollbar-width: thin;
   flex-shrink: 0;
   background: var(--surface);
   border-right: 1px solid var(--border);
@@ -86,7 +92,17 @@ a { color: inherit; text-decoration: none; }
 .side-logo { display: block; padding: 6px 8px 24px; }
 .side-logo img { width: 190px; max-width: 100%; height: auto; display: block; }
 
-.side-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+.side-nav { display: flex; flex-direction: column; gap: 18px; flex: 1; min-height: 0; }
+
+/* grupos do menu (Dashboard / Acervo / Fluxo de trabalho / rodapé) */
+.nav-group { display: flex; flex-direction: column; gap: 2px; }
+.nav-group-label {
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em;
+  color: var(--text-faint); padding: 0 12px 6px; user-select: none;
+}
+/* Organização + Atividade recente ficam grudados na base da sidebar,
+   por pedido — mesmo com poucos itens acima sobrando espaço vazio */
+.nav-group--bottom { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border); }
 .side-nav a {
   display: flex; align-items: center; gap: 11px;
   padding: 10px 12px; border-radius: var(--r-sm);
@@ -150,33 +166,25 @@ a { color: inherit; text-decoration: none; }
   padding: 28px 24px 80px;
 }
 
-/* link Caderno (posicionado perto do fundo do sidebar) */
-.side-nav-bottom {
-  margin-top: auto;
-  display: flex; align-items: center; gap: 11px;
-  padding: 10px 12px; border-radius: var(--r-sm);
-  color: var(--text-soft); font-weight: 550; font-size: 14.5px;
-  transition: background 0.15s, color 0.15s;
-}
-.side-nav-bottom:hover { background: var(--surface-2); color: var(--text); }
-.side-nav-bottom.active { background: var(--accent-soft); color: var(--accent); }
-.side-nav-bottom .ni-ic { width: 20px; text-align: center; font-size: 15px; display: flex; align-items: center; justify-content: center; }
-
 /* ---------------- Drawer "Atividade recente" ---------------- */
-.activity-drawer { position: relative; padding-top: 8px; border-top: 1px solid var(--border); margin-top: 8px; }
+.activity-drawer { position: relative; }
 .ad-tab {
-  width: 100%; display: flex; align-items: center; gap: 9px;
-  padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-sm);
-  background: var(--surface-2); color: var(--text-soft);
-  font: inherit; font-size: 13.5px; font-weight: 550; cursor: pointer;
+  width: 100%; display: flex; align-items: center; gap: 11px;
+  padding: 10px 12px; border: none; border-radius: var(--r-sm);
+  background: transparent; color: var(--text-soft);
+  font: inherit; font-size: 14.5px; font-weight: 550; cursor: pointer;
+  text-align: left;
   transition: background 0.15s, color 0.15s;
 }
-.ad-tab:hover { color: var(--text); }
+.ad-tab:hover { background: var(--surface-2); color: var(--text); }
+.ad-tab .ad-ic { width: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .ad-tab .ad-label { flex: 1; text-align: left; }
 .ad-tab .ad-caret { transition: transform 0.2s; opacity: 0.6; }
 
 .ad-panel {
-  position: absolute; left: calc(100% + 10px); bottom: 0;
+  /* fixed (e não absolute) porque a sidebar rola: um painel absoluto
+     seria cortado pelo overflow dela. A posição vem do JS (ligarDrawer). */
+  position: fixed; left: 242px; top: 80px;
   width: max-content; max-width: 50vw;
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--r-md); box-shadow: var(--shadow-md);
@@ -295,47 +303,96 @@ a { color: inherit; text-decoration: none; }
 .badge--teal   { background: var(--c-teal-bg);   color: var(--c-teal-fg); }
 .badge--slate  { background: var(--c-slate-bg);  color: var(--c-slate-fg); }
 
-/* ---------------- Grade de cards (Home) ---------------- */
-.card-grid {
+/* ---------------- Projetos: galeria de cards ---------------- */
+.proj-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(214px, 1fr));
+  gap: 18px;
 }
-.project-card {
-  position: relative;
+.proj-card {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 18px;
-  min-height: 130px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-sm);
   cursor: pointer;
-  transition: box-shadow 0.18s, transform 0.08s, border-color 0.18s;
   overflow: hidden;
+  transition: box-shadow 0.18s, transform 0.1s, border-color 0.18s;
 }
-.project-card::before {
-  content: "";
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 4px;
-  background: var(--card-accent, var(--border-strong));
-}
-.project-card:hover {
+.proj-card:hover {
   box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
   border-color: var(--border-strong);
 }
-.project-card .pc-year { color: var(--text-faint); font-size: 13px; font-weight: 500; }
-.project-card .pc-name {
-  font-size: 17px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  margin: 0;
+
+/* capa 16:9 — imagem de projetos.capa ou placeholder na cor do status */
+.pcard-capa {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--capa-bg, var(--surface-2));
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
 }
-.project-card .pc-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pcard-capa::after {
+  /* leve vinheta no topo pra o badge sempre ter contraste */
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.35), rgba(255,255,255,0) 46%);
+}
+.pcard-inicial {
+  font-family: var(--font-display);
+  font-size: 54px; line-height: 1;
+  color: var(--capa-fg, var(--text-faint));
+  opacity: 0.32;
+  user-select: none;
+}
+.pcard-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.proj-card:hover .pcard-img { transform: scale(1.04); }
+.pcard-badge { position: absolute; top: 9px; left: 9px; z-index: 2; }
+.pcard-badge .badge {
+  box-shadow: 0 1px 4px rgba(20, 28, 46, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+}
+
+.pcard-body { padding: 13px 15px 15px; display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.pcard-nome {
+  margin: 0;
+  font-size: 15.5px; font-weight: 650; letter-spacing: -0.01em; line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.pcard-ano { color: var(--text-faint); font-size: 12.5px; }
+.pcard-stats {
+  margin-top: auto; padding-top: 11px;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 12.5px; color: var(--text-soft);
+}
+.pcard-stats strong { color: var(--text); font-weight: 650; }
+.pcard-sep { width: 1px; height: 12px; background: var(--border); flex-shrink: 0; }
+
+/* contagem dentro dos chips de filtro */
+.chip-n {
+  display: inline-block; margin-left: 4px;
+  font-size: 11px; font-weight: 700; opacity: 0.55;
+}
+
+/* chips de projeto (Mídias: coluna "Projetos armazenados") */
+.proj-chips { display: inline-flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.proj-chip {
+  display: inline-block; max-width: 168px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 2px 9px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent);
+  border: 1px solid transparent;
+  font-size: 12px; font-weight: 600; line-height: 1.5;
+  transition: background 0.12s, border-color 0.12s;
+}
+a.proj-chip:hover { border-color: var(--accent); background: #d9eee2; }
+.proj-chip--mais { background: var(--surface-2); color: var(--text-soft); cursor: default; }
+.proj-chip--orfao { background: var(--c-gray-bg); color: var(--c-gray-fg); font-style: italic; cursor: default; }
 
 /* ---------------- Painel recolhível (Atividade recente) ---------------- */
 .panel {
@@ -395,7 +452,126 @@ a { color: inherit; text-decoration: none; }
 }
 .meta-cell .meta-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); margin-bottom: 4px; }
 .meta-cell .meta-value { font-size: 14.5px; font-weight: 550; }
+.meta-cell--wide { grid-column: 1 / -1; }
+.meta-cell--wide .meta-value { font-weight: 500; }
 
+
+/* ---------------- Projeto (detalhe): banner + KPIs ---------------- */
+.proj-banner {
+  position: relative;
+  padding: 26px 28px 22px;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  color: #fff;
+  background: linear-gradient(120deg, #0c2620 0%, #1f5c46 100%);
+  background-size: cover;
+  background-position: center;
+  margin-bottom: 14px;
+}
+.proj-banner-badge { position: absolute; top: 20px; right: 24px; }
+.proj-banner-badge .badge {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+.proj-banner-title {
+  font-family: var(--font-display); font-weight: 400;
+  font-size: 30px; line-height: 1.2; margin: 0 0 4px;
+  max-width: 80%;
+}
+.proj-banner-sub { font-size: 14px; color: rgba(255, 255, 255, 0.8); }
+
+.proj-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; flex-wrap: wrap; margin-bottom: 24px;
+}
+
+@media (max-width: 620px) {
+  .proj-banner-title { font-size: 24px; max-width: 100%; }
+  .proj-banner-badge { position: static; display: inline-block; margin-bottom: 10px; }
+}
+
+/* colunas: mídias vinculadas + links (principal) | histórico + demandas (lateral) */
+.proj-cols { display: grid; grid-template-columns: 1.5fr 1fr; gap: 22px; align-items: start; }
+@media (max-width: 900px) { .proj-cols { grid-template-columns: 1fr; } }
+.proj-col-main .section:last-child, .proj-col-side .section:last-child { margin-bottom: 0; }
+
+/* ícone quadrado à esquerda de uma mídia vinculada (lista, não mais grade) */
+.midia-row-ic {
+  width: 34px; height: 34px; flex-shrink: 0; border-radius: 8px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.midia-row-ic img { width: 22px; height: 22px; object-fit: contain; }
+
+/* linha "mostrar mais/concluídas" ao fim de um list-card */
+.lc-toggle {
+  display: block; width: 100%; text-align: center;
+  padding: 10px; border: none; border-top: 1px solid var(--border);
+  background: transparent; color: var(--accent);
+  font: inherit; font-weight: 600; font-size: 13px; cursor: pointer;
+}
+.lc-toggle:hover { background: var(--surface-2); }
+/* linha que reabre depois do "mostrar mais" — restaura o traço que o
+   :first-child de sempre removeria (ela é a 1ª de um wrapper interno) */
+.lc-extra .list-row:first-child { border-top: 1px solid var(--border); }
+
+/* histórico como linha do tempo */
+.timeline-card { padding: 6px 16px; }
+.timeline { position: relative; }
+.timeline-item {
+  position: relative; margin-left: 5px; padding: 10px 0 10px 18px;
+  border-left: 2px solid var(--border);
+}
+.timeline-item:last-child { border-color: transparent; padding-bottom: 2px; }
+.timeline-item:first-child { padding-top: 4px; }
+.timeline-dot {
+  position: absolute; left: -6px; top: 14px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--c-gray-bg); border: 2px solid var(--surface);
+}
+.timeline-dot--atual { background: var(--c-green-fg); }
+.timeline-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.timeline-title { font-weight: 650; font-size: 14px; }
+.timeline-meta { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+.timeline-desc { font-size: 12.5px; color: var(--text-soft); margin-top: 4px; }
+.timeline-item .lr-actions { opacity: 0; transition: opacity 0.12s; }
+.timeline-item:hover .lr-actions { opacity: 1; }
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  padding: 15px 17px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.kpi-label {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-faint); font-weight: 700;
+}
+.kpi-valor { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.kpi-valor--html { font-size: 15px; font-weight: 500; display: flex; align-items: center; flex: 1; }
+.kpi-valor--vazio { font-size: 15px; font-weight: 600; color: var(--text-faint); line-height: 1.35; padding-top: 3px; }
+.kpi-de { font-size: 16px; font-weight: 600; color: var(--text-faint); }
+.kpi-sub { font-size: 12px; color: var(--text-faint); margin-top: auto; }
+.kpi-barra { height: 5px; border-radius: 3px; background: var(--c-gray-bg); overflow: hidden; margin: 4px 0 2px; }
+.kpi-barra span { display: block; height: 100%; background: var(--c-green-fg); border-radius: 3px; transition: width 0.4s ease; }
+.kpi--vazio { border-style: dashed; background: transparent; box-shadow: none; }
+
+/* linhas de link externo */
+.link-ic { color: var(--accent); display: flex; flex-shrink: 0; }
+.link-a { color: var(--text); }
+.link-a:hover { color: var(--accent); text-decoration: underline; }
+.link-url {
+  font-size: 12px; color: var(--text-faint);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
 .section { margin-bottom: 28px; }
 .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
@@ -428,6 +604,78 @@ a { color: inherit; text-decoration: none; }
 
 .list-row--done .lr-title { text-decoration: line-through; color: var(--text-faint); }
 .list-row--done .lr-sub { color: var(--text-faint); }
+
+/* ---------------- Mídias: barra de filtros + tabela ---------------- */
+.filtros-bar {
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  margin-bottom: 18px;
+}
+.filtros-bar .input { min-width: 0; }
+.filtros-bar input[type="search"] { flex: 1 1 260px; }
+.filtros-bar select {
+  flex: 0 0 auto; min-width: 150px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%233a543a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  cursor: pointer;
+}
+
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;   /* rede de segurança: nada some cortado */
+}
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table thead th {
+  padding: 10px 12px; text-align: left;
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--text-faint); font-weight: 700;
+  background: var(--surface-2); border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.data-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.data-table tbody tr:last-child { border-bottom: none; }
+.data-table tbody tr:hover { background: var(--surface-2); }
+.data-table td { padding: 9px 12px; vertical-align: middle; font-size: 13.5px; }
+
+/* nome (+ tipo/conteúdo abaixo) é a coluna elástica, mas com teto —
+   sem isso ela toma todo o espaço sobrando e empurra Status pra fora
+   da tela quando o nome/conteúdo é longo. As demais são width:1%,
+   ou seja, só o necessário. */
+.data-table .col-nome { width: 30%; max-width: 260px; overflow: hidden; }
+.data-table .col-local { white-space: nowrap; color: var(--text-soft); width: 1%; }
+.data-table .col-tamanho { white-space: nowrap; color: var(--text-soft); width: 1%; }
+.data-table .col-proj { width: 1%; min-width: 150px; }
+.data-table .col-status { white-space: nowrap; width: 1%; }
+.data-table .col-acoes { width: 1%; padding-left: 0; padding-right: 10px; }
+.data-table .lr-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.12s; }
+.data-table tr:hover .lr-actions { opacity: 1; }
+@media (hover: none) { .data-table .lr-actions { opacity: 1; } }
+
+.dt-midia { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.dt-ic { width: 30px; height: 30px; object-fit: contain; flex-shrink: 0; }
+.dt-midia-txt { min-width: 0; flex: 1; }
+.dt-nome {
+  font-weight: 600; font-size: 13.5px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dt-sub {
+  font-size: 12px; color: var(--text-faint);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .data-table .col-local, .data-table thead .col-local { display: none; }
+}
+@media (max-width: 900px) {
+  .filtros-bar select { flex: 1 1 140px; min-width: 0; }
+}
 
 /* grid de mídias (ícones), na tela do projeto */
 .midia-grid {
@@ -617,6 +865,9 @@ a { color: inherit; text-decoration: none; }
   font-weight: 550;
   margin-bottom: 16px;
 }
+
+/* estado vazio dentro de uma grade ocupa a linha inteira */
+.proj-grid > .empty, .midia-grid > .empty { grid-column: 1 / -1; }
 
 .empty {
   padding: 26px;
@@ -812,6 +1063,17 @@ a { color: inherit; text-decoration: none; }
 }
 .field-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
+/* seletor de capa (upload de foto, comprimida em memória — ver js/ui/imagem.js) */
+.capa-picker { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.capa-preview {
+  width: 120px; aspect-ratio: 16 / 9; flex-shrink: 0;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.capa-preview img { width: 100%; height: 100%; object-fit: cover; }
+.capa-picker-actions { display: flex; flex-direction: column; gap: 6px; }
+.capa-escolher { display: inline-flex; }
+
 /* segmented control (tipo de período) */
 .segmented { display: inline-flex; gap: 4px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 3px; }
 .segmented button {
@@ -880,12 +1142,36 @@ a { color: inherit; text-decoration: none; }
 }
 .est-grupo-add { font-size: 11px; padding: 2px 8px; margin-left: auto; }
 
-/* Linhas de pasta no modal de mídia */
+/* Linhas de pasta no modal de mídia — rolagem própria: com muita pasta
+   cadastrada, quem cresce é a lista, não o modal inteiro */
 #est-lista {
   border: 1px solid var(--border-strong); border-radius: var(--r-sm);
   padding: 0 8px;
+  max-height: 320px; overflow-y: auto; scrollbar-width: thin;
 }
 #est-lista:empty { display: none; }
+
+/* seção recolhível dentro de um formulário (modal) — usada na
+   Estrutura de pastas: some com a rolagem infinita quando a mídia já
+   tem muita pasta cadastrada */
+.field-details { margin-bottom: 14px; }
+.field-details > summary {
+  list-style: none; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 600; color: var(--text-soft);
+  padding: 2px 0;
+}
+.field-details > summary::-webkit-details-marker { display: none; }
+.field-details > summary::before {
+  content: "›"; display: inline-block; color: var(--text-faint);
+  transition: transform 0.15s; flex-shrink: 0;
+}
+.field-details[open] > summary::before { transform: rotate(90deg); }
+.field-details-count {
+  font-weight: 500; font-size: 12px; color: var(--text-faint);
+  background: var(--surface-2); border-radius: 999px; padding: 1px 8px;
+}
+.field-details-body { padding-top: 8px; }
 .est-form-row {
   display: flex; flex-direction: column; gap: 6px;
   padding: 9px 0; border-top: 1px solid var(--border);
@@ -1043,24 +1329,31 @@ a { color: inherit; text-decoration: none; }
   .sidebar {
     width: 100%; height: auto; position: sticky; top: 0; z-index: 20;
     flex-direction: row; align-items: center; gap: 12px;
-    padding: 8px 12px; overflow-x: auto;
+    padding: 8px 12px; overflow-x: auto; overflow-y: visible;
   }
-  .side-logo { padding: 2px 4px; }
+  .side-logo { padding: 2px 4px; flex-shrink: 0; }
   .side-logo img { width: 96px; }
-  .side-nav { flex-direction: row; gap: 2px; }
+  .nav-group { flex-shrink: 0; }
+  /* separador discreto entre os grupos na barra horizontal */
+  .nav-group + .nav-group::before {
+    content: ""; width: 1px; height: 20px; background: var(--border); margin-right: 8px;
+  }
   .side-nav a { padding: 8px 11px; white-space: nowrap; font-size: 14px; }
   .side-nav .ni-ic { display: none; }
   .sg-list { display: none !important; }
   .sg-caret-btn { display: none; }
-  .side-nav-bottom { display: none; }
-  /* drawer vira folha fixa na base */
-  .activity-drawer { margin-top: 0; border-top: none; padding-top: 0; margin-left: auto; }
-  .ad-tab { padding: 8px 11px; }
+  .side-nav { flex-direction: row; gap: 10px; align-items: center; }
+  .nav-group { flex-direction: row; gap: 2px; align-items: center; }
+  .nav-group-label { display: none; }
+  /* na barra horizontal, quem vai pro fim da fileira é o grupo
+     inteiro (Organização + Atividade recente), não só o drawer */
+  .nav-group--bottom { margin-top: 0; padding-top: 0; border-top: none; margin-left: auto; }
+  /* drawer vira folha fixa logo abaixo da barra */
+  .activity-drawer { margin-left: 4px; }
+  .ad-tab { padding: 8px 11px; white-space: nowrap; font-size: 14px; }
+  .ad-tab .ad-ic { display: none; }
   .ad-tab .ad-label { display: none; }
-  .ad-panel {
-    left: auto; right: 8px; bottom: auto; top: calc(100% + 8px);
-    width: max-content; max-width: calc(100vw - 16px);
-  }
+  .ad-panel { max-width: calc(100vw - 16px); }
   .topbar { padding: 10px 14px; }
 }
 

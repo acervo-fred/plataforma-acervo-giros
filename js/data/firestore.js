@@ -265,14 +265,15 @@ export const firestoreStore = {
   async addProjeto(d) {
     const ref = await addDoc(collection(fdb, COLLECTIONS.projetos), {
       nome: d.nome, ano: d.ano, statusProjeto: d.statusProjeto,
-      atividadeAtual: d.atividadeAtual, alfred: d.alfred, lto: d.lto || [],
+      formato: d.formato || "Longa-metragem", temporadas: d.temporadas || null, episodios: d.episodios || null,
+      capa: d.capa || "", linksExternos: d.linksExternos || [],
       protocoloArquivamento: protocoloZerado(),
     });
     return { id: ref.id, ...d };
   },
   async addMidia(d) {
     const ref = await addDoc(collection(fdb, COLLECTIONS.midias), {
-      nome: d.nome, tipo: d.tipo, capacidade: d.capacidade || "",
+      nome: d.nome, tipo: d.tipo, capacidade: d.capacidade || "", usado: d.usado || "",
       statusMidia: d.statusMidia, local: d.local || "",
       projetosArmazenados: d.projetosArmazenados || [],
       conteudo: d.conteudo || "", conteudoPorProjeto: d.conteudoPorProjeto || {},

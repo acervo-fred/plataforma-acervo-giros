@@ -17,6 +17,9 @@ const ICONES_MIDIA = [
   { arquivo: "Hd mesa.png", label: "HDD de mesa" },
   { arquivo: "Lacie antigo prata.png", label: "LaCie prata" },
   { arquivo: "Lacie antigo borracha.png", label: "LaCie borracha" },
+  { arquivo: "HD generico.png", label: "HDD genérico" },
+  { arquivo: "SSD.png", label: "SSD" },
+  { arquivo: "NAS Servidor.png", label: "NAS/Servidor" },
   { arquivo: "LTO.png", label: "LTO" },
   { arquivo: "HD outros.png", label: "Genérico" },
 ];

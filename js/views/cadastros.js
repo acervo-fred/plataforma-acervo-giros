@@ -5,11 +5,16 @@
    Após gravar, dispara "data-changed" para a tela atual se re-renderizar. */
 
 import { store } from "../data/store.js";
-import { esc, formatAno, compararNomes } from "../ui/dom.js";
+import { esc, formatAno, compararNomes, toast } from "../ui/dom.js";
 import {
-  openModal, fieldText, fieldTextarea, fieldSelect, fieldTags,
-  hydrateTags, readTags, readValue,
+  openModal, fieldText, fieldTextarea, fieldSelect, readValue,
 } from "../ui/modal.js";
+import { imagemParaDataUrl } from "../ui/imagem.js";
+
+// formato do projeto — fixo (não é uma lista configurável em Configurações,
+// como statusProjeto/tipoMidia etc.), só controla se aparecem os campos
+// de temporadas/episódios
+export const FORMATOS = ["Longa-metragem", "Série"];
 
 function avisarMudanca() {
   window.dispatchEvent(new CustomEvent("data-changed"));
@@ -38,6 +43,7 @@ export async function abrirNovoProjeto(existente = null) {
   const listas = await store.getListas();
   const ed = !!existente;
   const p = existente || {};
+  const formatoInicial = p.formato || FORMATOS[0];
   openModal({
     title: ed ? "Editar projeto" : "Novo projeto",
     submitLabel: ed ? "Salvar alterações" : "Criar projeto",
@@ -48,23 +54,77 @@ export async function abrirNovoProjeto(existente = null) {
         ${fieldSelect("statusProjeto", "Status", listas.statusProjeto, { value: p.statusProjeto || listas.statusProjeto[0]?.valor })}
       </div>
       <div class="field-2col">
-        ${fieldSelect("atividadeAtual", "Atividade atual", listas.atividadeAtual, { value: p.atividadeAtual || listas.atividadeAtual[0] })}
-        ${fieldSelect("alfred", "ALFRED", listas.alfred, { value: p.alfred || listas.alfred[0] })}
+        ${fieldSelect("formato", "Formato", FORMATOS, { value: formatoInicial })}
+        <div></div>
       </div>
-      ${fieldTags("lto", "LTO", { hint: "Códigos de LTO deste projeto (entrada direta).", placeholder: "Ex.: LTO-014" })}
-      <div class="field-hint">Localizações e última atualização são automáticas — não aparecem aqui.</div>
+      <div id="formato-serie" ${formatoInicial === "Série" ? "" : "hidden"}>
+        <div class="field-2col">
+          ${fieldText("temporadas", "Temporadas", { type: "number", value: p.temporadas || "", placeholder: "Ex.: 2" })}
+          ${fieldText("episodios", "Episódios", { type: "number", value: p.episodios || "", placeholder: "Ex.: 16" })}
+        </div>
+      </div>
+      <div class="field">
+        <label>Capa do projeto</label>
+        <div class="capa-picker" id="capa-picker">
+          <div class="capa-preview" id="capa-preview">${p.capa ? `<img src="${esc(p.capa)}" alt="">` : `<span class="muted">Sem capa</span>`}</div>
+          <div class="capa-picker-actions">
+            <label class="btn btn-ghost btn-sm capa-escolher">
+              Escolher foto…
+              <input type="file" accept="image/*" id="capa-file" hidden />
+            </label>
+            <button type="button" class="btn btn-ghost btn-sm" id="capa-remover" ${p.capa ? "" : "hidden"}>Remover</button>
+          </div>
+          <input type="hidden" name="capa" id="f_capa" value="${esc(p.capa || "")}" />
+        </div>
+        <div class="field-hint">Aparece no topo da página do projeto. Sem foto, usa um fundo na cor do status.</div>
+      </div>
+      <div class="field-hint">Última atualização e links do projeto não ficam aqui — os links se gerenciam na página do projeto.</div>
     `,
-    onMount: (form) => hydrateTags(form, "lto", p.lto || []),
+    onMount: (form) => {
+      // mostra/esconde temporadas·episódios conforme o formato escolhido
+      const boxSerie = form.querySelector("#formato-serie");
+      form.elements.formato.addEventListener("change", (e) => {
+        boxSerie.hidden = e.target.value !== "Série";
+      });
+
+      // capa: escolhe um arquivo → comprime em memória → guarda como
+      // data URL no campo oculto (nada é enviado pra lugar nenhum)
+      const preview = form.querySelector("#capa-preview");
+      const hidden = form.querySelector("#f_capa");
+      const btnRemover = form.querySelector("#capa-remover");
+      form.querySelector("#capa-file").addEventListener("change", async (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+        preview.innerHTML = `<span class="muted">Carregando…</span>`;
+        try {
+          const dataUrl = await imagemParaDataUrl(file);
+          hidden.value = dataUrl;
+          preview.innerHTML = `<img src="${dataUrl}" alt="">`;
+          btnRemover.hidden = false;
+        } catch (err) {
+          toast(err.message || "Não consegui processar essa imagem.");
+          preview.innerHTML = hidden.value ? `<img src="${esc(hidden.value)}" alt="">` : `<span class="muted">Sem capa</span>`;
+        }
+      });
+      btnRemover.addEventListener("click", () => {
+        hidden.value = "";
+        preview.innerHTML = `<span class="muted">Sem capa</span>`;
+        btnRemover.hidden = true;
+      });
+    },
     onSubmit: async (form) => {
       const nome = readValue(form, "nome");
       if (!nome) throw new Error("Informe o nome do projeto.");
+      const formato = readValue(form, "formato");
       const campos = {
         nome,
         ano: Number(readValue(form, "ano")) || 1900,
         statusProjeto: readValue(form, "statusProjeto"),
-        atividadeAtual: readValue(form, "atividadeAtual"),
-        alfred: readValue(form, "alfred"),
-        lto: readTags(form, "lto"),
+        formato,
+        temporadas: formato === "Série" ? Number(readValue(form, "temporadas")) || null : null,
+        episodios: formato === "Série" ? Number(readValue(form, "episodios")) || null : null,
+        capa: readValue(form, "capa"),
       };
       if (ed) await store.updateProjeto(p.id, campos);
       else await store.addProjeto(campos);
@@ -96,20 +156,29 @@ export async function abrirNovaMidia(existente = null, { projetoIdFixo = null } 
         ${fieldText("capacidade", "Capacidade (TB)", { type: "number", value: capacidadeParaNumero(m.capacidade), placeholder: "Ex.: 8" })}
       </div>
       <div class="field-2col">
+        ${fieldText("usado", "Usado (TB)", { type: "number", value: capacidadeParaNumero(m.usado), placeholder: "Ex.: 6.5", hint: "Espaço já ocupado nesta mídia. Em branco, assume ~90% da capacidade." })}
         ${fieldSelect("statusMidia", "Status", listas.statusMidia, { value: m.statusMidia || listas.statusMidia[0]?.valor })}
+      </div>
+      <div class="field-2col">
         ${fieldSelect("local", "Onde está", ["", ...listas.locais], { value: m.local || "" })}
+        <div></div>
       </div>
       <div class="field">
         <label>Projetos armazenados</label>
         <div class="field-hint" style="margin-bottom:6px">Marque os projetos e descreva o conteúdo de cada um nesta mídia.</div>
         <div id="proj-conteudo-lista"></div>
       </div>
-      <div class="field">
-        <label>Estrutura de pastas <span style="font-weight:400;color:var(--text-faint);font-size:12px">— opcional</span></label>
-        <div class="field-hint" style="margin-bottom:6px">Pastas desta mídia por projeto. Detalhes como resumo e LTO podem ser editados depois na página do projeto.</div>
-        <div id="est-lista"></div>
-        <button type="button" id="est-add-btn" class="btn btn-ghost" style="width:100%;margin-top:6px;font-size:12px">+ Adicionar pasta</button>
-      </div>
+      <details class="field-details" ${estruturaExistente.length ? "" : "open"}>
+        <summary>Estrutura de pastas
+          ${estruturaExistente.length ? `<span class="field-details-count">${estruturaExistente.length} cadastrada${estruturaExistente.length > 1 ? "s" : ""}</span>` : ""}
+          <span class="muted" style="font-weight:400;font-size:12px">— opcional</span>
+        </summary>
+        <div class="field-details-body">
+          <div class="field-hint" style="margin-bottom:6px">Pastas desta mídia por projeto. Detalhes como resumo e LTO podem ser editados depois na página do projeto.</div>
+          <div id="est-lista"></div>
+          <button type="button" id="est-add-btn" class="btn btn-ghost" style="width:100%;margin-top:6px;font-size:12px">+ Adicionar pasta</button>
+        </div>
+      </details>
       ${fieldTextarea("observacoes", "Observações", { value: m.conteudo || "", hint: "Observações gerais sobre esta mídia." })}
     `,
     onMount: (form) => {
@@ -232,10 +301,12 @@ export async function abrirNovaMidia(existente = null, { projetoIdFixo = null } 
       const nome = readValue(form, "nome");
       if (!nome) throw new Error("Informe o nome da mídia.");
       const capacidadeNum = readValue(form, "capacidade");
+      const usadoNum = readValue(form, "usado");
       const campos = {
         nome,
         tipo: readValue(form, "tipo"),
         capacidade: capacidadeNum ? `${capacidadeNum}TB` : "",
+        usado: usadoNum ? `${usadoNum}TB` : "",
         statusMidia: readValue(form, "statusMidia"),
         local: readValue(form, "local"),
         projetosArmazenados: form._getProjetosArmazenados(),

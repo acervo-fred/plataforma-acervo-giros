@@ -176,9 +176,33 @@ function ligarDrawer() {
   const drawer = document.getElementById("activity-drawer");
   const tab = document.getElementById("ad-tab");
   const list = document.getElementById("ad-list");
+  const panel = drawer?.querySelector(".ad-panel");
   if (!drawer) return;
+
+  // o painel é position:fixed (a sidebar rola e cortaria um absoluto),
+  // então a posição é calculada a partir do botão, na hora de abrir
+  function posicionarPainel() {
+    const r = tab.getBoundingClientRect();
+    const alturaPainel = panel.offsetHeight || 260;
+    if (window.innerWidth <= 860) {
+      panel.style.left = "auto";
+      panel.style.right = "8px";
+      panel.style.top = `${r.bottom + 8}px`;
+    } else {
+      panel.style.right = "auto";
+      panel.style.left = `${r.right + 10}px`;
+      const topo = Math.min(r.top - 8, window.innerHeight - alturaPainel - 12);
+      panel.style.top = `${Math.max(12, topo)}px`;
+    }
+  }
+  drawer.addEventListener("mouseenter", posicionarPainel);
+  window.addEventListener("resize", () => { if (drawer.classList.contains("open")) posicionarPainel(); });
+
   // clique no botão fixa/desfixa o painel aberto
-  tab.addEventListener("click", () => drawer.classList.toggle("open"));
+  tab.addEventListener("click", () => {
+    drawer.classList.toggle("open");
+    if (drawer.classList.contains("open")) posicionarPainel();
+  });
   // clique num item navega para o projeto e fecha
   list.addEventListener("click", (e) => {
     const item = e.target.closest("[data-projeto]");
@@ -236,6 +260,18 @@ window.addEventListener("unhandledrejection", (e) => {
     e.preventDefault();
   }
 });
+
+/* Migrações pontuais de schema. Não rodam sozinhas — são chamadas à
+   mão no console, logada como editor:
+     await window.migrarProjetos({ dryRun: true })      // campos novos (capa, links, formato)
+     await window.migrarProjetos()
+     await window.migrarStatusProjeto({ dryRun: true }) // renomeia "Catalogado" → "Completo"
+     await window.migrarStatusProjeto()
+   As telas funcionam sem elas (leem com fallback). */
+window.migrarProjetos = async (opts) =>
+  (await import("./data/migracoes.js")).migrarCamposProjeto(opts);
+window.migrarStatusProjeto = async (opts) =>
+  (await import("./data/migracoes.js")).migrarStatusProjeto(opts);
 
 window.addEventListener("hashchange", router);
 window.addEventListener("data-changed", router);
