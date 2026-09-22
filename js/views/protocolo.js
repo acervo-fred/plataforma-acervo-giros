@@ -11,8 +11,10 @@ import { store } from "../data/store.js";
 import { esc, compararNomes, toast } from "../ui/dom.js";
 import { suportaSelecaoPastas } from "../ui/pasta-tree.js";
 import { SECOES_PROTOCOLO, FASES_PROCESSO, idsFolha, idsFolhaDaSecao } from "../data/protocolo-arquivamento.js";
+import { hashVoltar } from "../ui/nav-history.js";
 
 const FOLDER_ICON = `<svg class="tm-node-ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>`;
+const CHECK_ICON = `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
 // ícones das 6 fases (capa), na mesma ordem de FASES_PROCESSO — estilo
 // de linha minimalista, igual ao resto do app (vem do PDF de referência)
@@ -38,7 +40,7 @@ export async function renderProtocolo(app, projetoId) {
     store.getProtocolo(projetoId),
   ]);
   if (!projeto) {
-    app.innerHTML = `<a class="back-link" href="#/protocolo">← Voltar</a>
+    app.innerHTML = `<a class="back-link" href="${esc(hashVoltar("#/protocolo"))}">← Voltar</a>
       <div class="empty">Projeto não encontrado.</div>`;
     return;
   }
@@ -49,8 +51,9 @@ export async function renderProtocolo(app, projetoId) {
 /* ---------- tela de escolha (lista de projetos, com progresso) ---------- */
 
 // created (sem organized) conta como "iniciado" — criar as pastas já é
-// começar o processo, não é a mesma coisa que "nada feito ainda"
-function pctProjeto(p) {
+// começar o processo, não é a mesma coisa que "nada feito ainda".
+// Exportado: reaproveitado pelo KPI de Arquivamento na tela do Projeto.
+export function pctProjeto(p) {
   const dados = p.protocoloArquivamento || {};
   const leafs = idsFolha();
   const organized = leafs.filter((id) => dados[id]?.organized).length;
@@ -65,7 +68,7 @@ function pctProjeto(p) {
   };
 }
 
-function progressoHtml(stats) {
+export function progressoHtml(stats) {
   const { pctOrganized, pctCreated, iniciado, completo } = stats;
   const rotulo = !iniciado ? "Não iniciado" : completo ? "Completo" : pctOrganized > 0 ? `${pctOrganized}% concluído` : "Iniciado";
   const pctTotal = pctOrganized + pctCreated;
@@ -121,13 +124,18 @@ async function renderEscolhaProjeto(app) {
 /* ---------- checklist de um projeto ---------- */
 
 function renderChecklist(app, projeto, protocolo) {
+  const fasesConcluidas = Array.from(
+    { length: FASES_PROCESSO.length },
+    (_, i) => !!(projeto.fasesProcesso && projeto.fasesProcesso[i])
+  );
+
   app.innerHTML = `
-    <a class="back-link" href="#/projeto/${esc(projeto.id)}">← Voltar para ${esc(projeto.nome)}</a>
+    <a class="back-link" href="${esc(hashVoltar(`#/projeto/${projeto.id}`))}">← Voltar</a>
 
     <div class="page-head">
       <div>
-        <h1 class="page-title">Protocolo de Arquivamento do Acervo</h1>
-        <div class="page-sub">${esc(projeto.nome)} · organização de pastas e backup</div>
+        <h1 class="page-title">${esc(projeto.nome)}</h1>
+        <div class="page-sub">Protocolo de Arquivamento do Acervo · organização de pastas e backup</div>
       </div>
     </div>
 
@@ -146,12 +154,7 @@ function renderChecklist(app, projeto, protocolo) {
     </div>
     ${suportaSelecaoPastas() ? "" : `<div class="note edit-only"><span class="note-i">ⓘ</span> Esse navegador não sabe criar pastas no computador. Abra pelo Google Chrome.</div>`}
 
-    <details class="protocolo-fases">
-      <summary>Fases do processo <span class="section-hint">referência — não interativo</span></summary>
-      <ol class="fases-list">
-        ${FASES_PROCESSO.map((f) => `<li><strong>${esc(f.titulo)}</strong> — ${esc(f.desc)}</li>`).join("")}
-      </ol>
-    </details>
+    ${fasesBlocoHtml(fasesConcluidas)}
 
     <div id="protocolo-secoes">
       ${SECOES_PROTOCOLO.map((s) => secaoHtml(s, protocolo)).join("")}
@@ -162,6 +165,41 @@ function renderChecklist(app, projeto, protocolo) {
   ligarToggles(app, projeto.id, protocolo);
   ligarNotas(app, projeto.id, protocolo);
   ligarToolbar(app, projeto, protocolo);
+  ligarFases(app, projeto.id, fasesConcluidas);
+}
+
+/* ---------- "Fases do processo" — marcação manual, uma por uma ---------- */
+
+function fasesBlocoHtml(fasesConcluidas) {
+  const feitas = fasesConcluidas.filter(Boolean).length;
+  const total = FASES_PROCESSO.length;
+  return `<details class="protocolo-fases" id="fases-wrap" open>
+    <summary>Fases do processo <span class="section-hint">${feitas} de ${total} feito${feitas === 1 ? "" : "s"}</span></summary>
+    <ul class="fases-list">
+      ${FASES_PROCESSO.map((f, i) => faseItemHtml(f, i, fasesConcluidas[i])).join("")}
+    </ul>
+  </details>`;
+}
+
+function faseItemHtml(f, i, feita) {
+  return `<li class="fase-item ${feita ? "is-done" : ""}">
+    <button type="button" class="fase-check edit-only-inert ${feita ? "is-on" : ""}" data-fase="${i}" title="${feita ? "Marcar como não feita" : "Marcar como feita"}">${feita ? CHECK_ICON : ""}</button>
+    <span class="fase-item-texto"><strong>${esc(f.titulo)}</strong> — ${esc(f.desc)}</span>
+  </li>`;
+}
+
+function ligarFases(app, projetoId, fasesConcluidas) {
+  const wrap = app.querySelector("#fases-wrap");
+  if (!wrap) return;
+  wrap.querySelectorAll(".fase-check").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const i = Number(btn.dataset.fase);
+      fasesConcluidas[i] = !fasesConcluidas[i];
+      app.querySelector("#fases-wrap").outerHTML = fasesBlocoHtml(fasesConcluidas);
+      ligarFases(app, projetoId, fasesConcluidas);
+      store.setFasesProcesso(projetoId, fasesConcluidas);
+    });
+  });
 }
 
 function secaoHtml(secao, protocolo) {

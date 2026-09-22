@@ -6,11 +6,12 @@
 import { store } from "../data/store.js";
 import { esc, formatAno, ordenarDemandas, compararNomes } from "../ui/dom.js";
 import { badgeFromLista } from "../ui/badges.js";
-import { fmtTB, progressoProtocolo, somaUsado } from "../ui/formato.js";
+import { fmtTB, somaUsado } from "../ui/formato.js";
 import { iconeMidia } from "../ui/icons.js";
-import { idsFolha } from "../data/protocolo-arquivamento.js";
 import { openModal, fieldText, fieldSelect, readValue } from "../ui/modal.js";
 import { abrirNovoProjeto, abrirNovaMidia, abrirNovoHistorico, abrirNovaDemanda } from "./cadastros.js";
+import { hashVoltar } from "../ui/nav-history.js";
+import { pctProjeto, progressoHtml } from "./protocolo.js";
 
 const TIPOS_LINK = ["Vimeo", "YouTube", "Site", "Drive", "Instagram", "Outro"];
 const STATUS_FECHADOS = ["Concluída", "Cancelada"];
@@ -18,7 +19,7 @@ const STATUS_FECHADOS = ["Concluída", "Cancelada"];
 export async function renderProjeto(app, id) {
   const projeto = await store.getProjeto(id);
   if (!projeto) {
-    app.innerHTML = `<a class="back-link" href="#/">← Voltar</a>
+    app.innerHTML = `<a class="back-link" href="${esc(hashVoltar("#/"))}">← Voltar</a>
       <div class="empty">Projeto não encontrado.</div>`;
     return;
   }
@@ -38,12 +39,8 @@ export async function renderProjeto(app, id) {
   const ltoUsado = somaUsado(midias.filter((m) => m.tipo === "LTO"));
   const links = projeto.linksExternos || [];
 
-  // progresso do protocolo: lê o campo bruto do projeto, sem inicializar
-  // nada no banco (quem inicializa é a própria tela de Arquivamento)
-  const prog = progressoProtocolo(projeto.protocoloArquivamento, idsFolha());
-
   app.innerHTML = `
-    <a class="back-link" href="#/">← Voltar para projetos</a>
+    <a class="back-link" href="${esc(hashVoltar("#/"))}">← Voltar</a>
 
     <div class="proj-banner"${projeto.capa
       ? ` style="background-image: linear-gradient(120deg, rgba(9,26,20,.78), rgba(20,70,52,.55)), url('${esc(projeto.capa)}')"`
@@ -66,7 +63,7 @@ export async function renderProjeto(app, id) {
       ${kpi("Status atual", badgeFromLista(listas.statusProjeto, projeto.statusProjeto), "", true)}
       ${kpi("Mídias vinculadas", String(midias.length), midias.length === 1 ? "mídia no acervo" : "mídias no acervo")}
       ${kpi("Tamanho total", fmtTB(totalUsado), ltoUsado ? `${fmtTB(ltoUsado)} em LTO` : "espaço ocupado nas mídias")}
-      ${kpiProtocolo(prog)}
+      ${kpiProtocolo(projeto)}
     </div>
 
     <div class="proj-cols">
@@ -257,21 +254,14 @@ function kpi(label, valor, sub = "", valorHtml = false) {
   </div>`;
 }
 
-function kpiProtocolo({ iniciado, organized, total }) {
-  if (!iniciado) {
-    return `<div class="kpi kpi--vazio">
-      <div class="kpi-label">Arquivamento</div>
-      <div class="kpi-valor kpi-valor--vazio">Protocolo não iniciado</div>
-      <div class="kpi-sub">nenhuma pasta marcada ainda</div>
-    </div>`;
-  }
-  const pct = total ? Math.round((organized / total) * 100) : 0;
-  return `<div class="kpi">
+// donut + rótulo iguais aos da lista da aba Arquivamento (pctProjeto/
+// progressoHtml, em protocolo.js) — clicável, abre o protocolo do projeto
+function kpiProtocolo(projeto) {
+  return `<a class="kpi kpi--link" href="#/protocolo/${esc(projeto.id)}">
     <div class="kpi-label">Arquivamento</div>
-    <div class="kpi-valor">${organized}<span class="kpi-de">/${total}</span></div>
-    <div class="kpi-barra"><span style="width:${pct}%"></span></div>
-    <div class="kpi-sub">${pct}% das pastas organizadas</div>
-  </div>`;
+    <div class="kpi-valor kpi-valor--html">${progressoHtml(pctProjeto(projeto))}</div>
+    <div class="kpi-sub">ver protocolo de arquivamento →</div>
+  </a>`;
 }
 
 // linha de mídia vinculada (lista, não mais grade de ícones)

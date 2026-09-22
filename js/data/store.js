@@ -270,6 +270,15 @@ const mockStore = {
     persistir();
     return true;
   },
+  // "Fases do processo" (capa do Protocolo) — array de booleans, uma por
+  // fase, marcadas manualmente (independente do checklist de pastas)
+  async setFasesProcesso(projetoId, fases) {
+    const p = db.projetos.find((x) => x.id === projetoId);
+    if (!p) return false;
+    p.fasesProcesso = fases;
+    persistir();
+    return true;
+  },
 
   /* MÍDIAS */
   async listMidias() {

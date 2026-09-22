@@ -22,6 +22,7 @@ import { iconClock, iconAlert } from "./ui/icons.js";
 import { abrirNovaDemanda } from "./views/cadastros.js";
 import { onAuthChange, loginComGoogle, logout } from "./data/auth.js";
 import { iniciarPortaoAcesso } from "./ui/access-gate.js";
+import { registrarRota, hashVoltar } from "./ui/nav-history.js";
 
 const app = document.getElementById("app");
 
@@ -33,7 +34,7 @@ function setActiveNav(name) {
 
 function placeholder(titulo, msg) {
   app.innerHTML = `
-    <a class="back-link" href="#/">← Voltar para projetos</a>
+    <a class="back-link" href="${esc(hashVoltar("#/"))}">← Voltar</a>
     <h1 class="page-title">${titulo}</h1>
     <div class="empty">${msg}</div>`;
 }
@@ -44,6 +45,7 @@ async function router() {
     return;
   }
   const hash = location.hash;
+  registrarRota(hash);
   const [rota, param] = hash.replace(/^#\//, "").split("/");
 
   window.scrollTo(0, 0);

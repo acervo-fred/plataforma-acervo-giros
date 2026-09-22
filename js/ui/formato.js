@@ -52,13 +52,3 @@ export function fmtUso(midia) {
 export function somaUsado(midias) {
   return midias.reduce((s, m) => s + usadoTB(m), 0);
 }
-
-// Progresso do protocolo de arquivamento a partir do campo bruto do
-// projeto (sem inicializar nada no banco — ao contrário de getProtocolo).
-// leafs: ids de item-folha (idsFolha()).
-export function progressoProtocolo(protocolo, leafs) {
-  if (!protocolo) return { iniciado: false, organized: 0, total: leafs.length };
-  const organized = leafs.filter((id) => protocolo[id]?.organized).length;
-  const created = leafs.filter((id) => protocolo[id]?.created).length;
-  return { iniciado: created + organized > 0, organized, total: leafs.length };
-}

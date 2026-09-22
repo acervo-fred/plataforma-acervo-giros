@@ -563,6 +563,8 @@ a.proj-chip:hover { border-color: var(--accent); background: #d9eee2; }
 .kpi-barra { height: 5px; border-radius: 3px; background: var(--c-gray-bg); overflow: hidden; margin: 4px 0 2px; }
 .kpi-barra span { display: block; height: 100%; background: var(--c-green-fg); border-radius: 3px; transition: width 0.4s ease; }
 .kpi--vazio { border-style: dashed; background: transparent; box-shadow: none; }
+.kpi--link { text-decoration: none; color: inherit; cursor: pointer; transition: border-color 0.15s ease, transform 0.15s ease; }
+.kpi--link:hover { border-color: var(--accent); transform: translateY(-1px); }
 
 /* linhas de link externo */
 .link-ic { color: var(--accent); display: flex; flex-shrink: 0; }
@@ -719,8 +721,18 @@ a.proj-chip:hover { border-color: var(--accent); background: #d9eee2; }
   list-style: none;
 }
 .protocolo-fases summary::-webkit-details-marker { display: none; }
-.fases-list { margin: 0; padding: 2px 16px 16px 34px; color: var(--text-soft); font-size: 13.5px; }
-.fases-list li { margin-bottom: 4px; }
+.fases-list { margin: 0; padding: 2px 16px 16px 16px; color: var(--text-soft); font-size: 13.5px; list-style: none; }
+.fase-item { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 7px; }
+.fase-check {
+  flex-shrink: 0; margin-top: 2px; padding: 0;
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 1.5px solid var(--border-strong); background: var(--surface);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--c-green-fg); cursor: pointer;
+}
+.fase-check:hover { border-color: var(--c-green-fg); }
+.fase-check.is-on { background: var(--c-green-bg); border-color: transparent; }
+.fase-item.is-done .fase-item-texto { text-decoration: line-through; color: var(--text-faint); }
 
 /* Capa do Protocolo (tela #/protocolo) — esquema das 6 fases, 3 por
    linha, com setas de sequência dentro de cada linha (1→2→3 e 4→5→6,

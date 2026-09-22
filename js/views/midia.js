@@ -11,6 +11,7 @@ import { openModal, fieldText, fieldTextarea, readValue } from "../ui/modal.js";
 import { suportaSelecaoPastas } from "../ui/pasta-tree.js";
 import { gerarListaArquivos, baixarTxt, TAMANHO_SEGURO_FIRESTORE } from "../ui/lista-arquivos.js";
 import { usuarioAtual } from "../data/auth.js";
+import { hashVoltar } from "../ui/nav-history.js";
 
 const CORVAR = {
   gray: "--c-gray-fg", blue: "--c-blue-fg", amber: "--c-amber-fg",
@@ -21,7 +22,7 @@ const CORVAR = {
 export async function renderMidia(app, id) {
   const midia = await store.getMidia(id);
   if (!midia) {
-    app.innerHTML = `<a class="back-link" href="#/midias">← Voltar para mídias</a>
+    app.innerHTML = `<a class="back-link" href="${esc(hashVoltar("#/midias"))}">← Voltar</a>
       <div class="empty">Mídia não encontrada.</div>`;
     return;
   }
@@ -37,7 +38,7 @@ export async function renderMidia(app, id) {
   const nomePorId = Object.fromEntries(projetos.filter((p) => p.existe).map((p) => [p.id, p.nome]));
 
   app.innerHTML = `
-    <a class="back-link" href="#/midias">← Voltar para mídias</a>
+    <a class="back-link" href="${esc(hashVoltar("#/midias"))}">← Voltar</a>
 
     <div class="detail-head">
       <div>

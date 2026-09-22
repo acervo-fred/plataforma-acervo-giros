@@ -6,6 +6,8 @@ import { store } from "../data/store.js";
 import { USE_FIRESTORE } from "../config/firebase-config.js";
 import * as mock from "../data/mock.js";
 import { usuarioAtual } from "../data/auth.js";
+import { esc } from "../ui/dom.js";
+import { hashVoltar } from "../ui/nav-history.js";
 
 function bundleExemplo() {
   return structuredClone({
@@ -27,7 +29,7 @@ export async function renderAdmin(app) {
   // só acessível a partir de Configurações, já restrita — mais essa
   // trava aqui é só rede de segurança pra quem digitar a URL direto
   if (!usuarioAtual()) {
-    app.innerHTML = `<a class="back-link" href="#/">← Voltar</a>
+    app.innerHTML = `<a class="back-link" href="${esc(hashVoltar("#/"))}">← Voltar</a>
       <div class="empty">Esta área é restrita a quem está editando.</div>`;
     return;
   }
@@ -35,7 +37,7 @@ export async function renderAdmin(app) {
   const backend = USE_FIRESTORE ? "Firestore (giros-imagens)" : "Local (neste navegador)";
 
   app.innerHTML = `
-    <a class="back-link" href="#/config">← Voltar para Configurações</a>
+    <a class="back-link" href="${esc(hashVoltar("#/config"))}">← Voltar</a>
     <div class="page-head"><div>
       <h1 class="page-title">Backup e dados</h1>
       <div class="page-sub">Backend atual: <strong>${backend}</strong></div>

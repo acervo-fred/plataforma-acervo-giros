@@ -11,11 +11,12 @@ import { store } from "../data/store.js";
 import { esc, formatAno, compararNomes } from "../ui/dom.js";
 import { montarSeletorPastas } from "../ui/pasta-tree.js";
 import { usuarioAtual } from "../data/auth.js";
+import { hashVoltar } from "../ui/nav-history.js";
 
 export async function renderMidiaPastas(app, midiaId) {
   const midia = await store.getMidia(midiaId);
   if (!midia) {
-    app.innerHTML = `<a class="back-link" href="#/midias">← Voltar para mídias</a>
+    app.innerHTML = `<a class="back-link" href="${esc(hashVoltar("#/midias"))}">← Voltar</a>
       <div class="empty">Mídia não encontrada.</div>`;
     return;
   }
@@ -23,7 +24,7 @@ export async function renderMidiaPastas(app, midiaId) {
   // página inteira é de escrita (importar pastas) — quem chegou aqui
   // via URL direta sem estar logado como editor não vê o formulário
   if (!usuarioAtual()) {
-    app.innerHTML = `<a class="back-link" href="#/midia/${esc(midiaId)}">← Voltar para ${esc(midia.nome)}</a>
+    app.innerHTML = `<a class="back-link" href="${esc(hashVoltar(`#/midia/${midiaId}`))}">← Voltar</a>
       <div class="empty">Esta área é restrita a quem está editando. Entre como editor para importar pastas.</div>`;
     return;
   }
@@ -36,7 +37,7 @@ export async function renderMidiaPastas(app, midiaId) {
   const projetosValidos = projetos.filter((p) => p.existe).sort((a, b) => compararNomes(a.nome, b.nome));
 
   app.innerHTML = `
-    <a class="back-link" href="#/midia/${esc(midiaId)}">← Voltar para ${esc(midia.nome)}</a>
+    <a class="back-link" href="${esc(hashVoltar(`#/midia/${midiaId}`))}">← Voltar</a>
 
     <div class="page-head">
       <div>

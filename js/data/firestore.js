@@ -185,6 +185,13 @@ export const firestoreStore = {
     await updateDoc(ref, ...args);
     return true;
   },
+  // "Fases do processo" (capa do Protocolo) — array de booleans, uma por
+  // fase, marcadas manualmente (independente do checklist de pastas)
+  async setFasesProcesso(projetoId, fases) {
+    const ref = doc(fdb, COLLECTIONS.projetos, projetoId);
+    await updateDoc(ref, { fasesProcesso: fases });
+    return true;
+  },
 
   /* MÍDIAS */
   async listMidias() { return allDocs(COLLECTIONS.midias); },
