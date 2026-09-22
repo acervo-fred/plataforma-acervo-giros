@@ -157,7 +157,7 @@ export async function abrirNovaMidia(existente = null, { projetoIdFixo = null } 
       </div>
       <div class="field-2col">
         ${fieldText("usado", "Usado (TB)", { type: "number", value: capacidadeParaNumero(m.usado), placeholder: "Ex.: 6.5", hint: "Espaço já ocupado nesta mídia. Em branco, assume ~90% da capacidade." })}
-        ${fieldSelect("statusMidia", "Status", listas.statusMidia, { value: m.statusMidia || listas.statusMidia[0]?.valor })}
+        ${fieldSelect("statusMidia", "Status", listas.statusMidia, { value: m.statusMidia || (listas.statusMidia.some((s) => s.valor === "Sem atividade") ? "Sem atividade" : listas.statusMidia[0]?.valor) })}
       </div>
       <div class="field-2col">
         ${fieldSelect("local", "Onde está", ["", ...listas.locais], { value: m.local || "" })}
