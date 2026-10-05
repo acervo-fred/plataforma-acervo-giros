@@ -5,7 +5,7 @@
 import { store } from "../data/store.js";
 import { USE_FIRESTORE } from "../config/firebase-config.js";
 import * as mock from "../data/mock.js";
-import { usuarioAtual } from "../data/auth.js";
+import { usuarioAdmin } from "../data/auth.js";
 import { esc } from "../ui/dom.js";
 import { hashVoltar } from "../ui/nav-history.js";
 
@@ -28,9 +28,9 @@ function baixarJSON(obj, nome) {
 export async function renderAdmin(app) {
   // só acessível a partir de Configurações, já restrita — mais essa
   // trava aqui é só rede de segurança pra quem digitar a URL direto
-  if (!usuarioAtual()) {
+  if (!usuarioAdmin()) {
     app.innerHTML = `<a class="back-link" href="${esc(hashVoltar("#/"))}">← Voltar</a>
-      <div class="empty">Esta área é restrita a quem está editando.</div>`;
+      <div class="empty">Esta área é restrita ao administrador.</div>`;
     return;
   }
 

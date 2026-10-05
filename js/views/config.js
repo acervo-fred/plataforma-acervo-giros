@@ -7,7 +7,7 @@
 
 import { store } from "../data/store.js";
 import { esc } from "../ui/dom.js";
-import { usuarioAtual } from "../data/auth.js";
+import { usuarioAdmin } from "../data/auth.js";
 import { hashVoltar } from "../ui/nav-history.js";
 
 const PALETA = ["gray", "blue", "amber", "green", "violet", "rose", "teal", "slate"];
@@ -47,11 +47,11 @@ const CATEGORIAS = [
 let editando = null; // { chave, index }  | index === -1 => novo
 
 export async function renderConfig(app) {
-  // página inteira é de edição — quem chegou aqui via URL direta sem
-  // estar logado como editor não vê os formulários
-  if (!usuarioAtual()) {
+  // só o admin principal (botão no topbar é .admin-only) — quem chegou
+  // aqui via URL direta sem ser admin não vê os formulários
+  if (!usuarioAdmin()) {
     app.innerHTML = `<a class="back-link" href="${esc(hashVoltar("#/"))}">← Voltar</a>
-      <div class="empty">Esta área é restrita a quem está editando.</div>`;
+      <div class="empty">Esta área é restrita ao administrador.</div>`;
     return;
   }
 

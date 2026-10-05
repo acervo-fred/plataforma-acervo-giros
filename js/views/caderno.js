@@ -1,10 +1,10 @@
-import { usuarioAtual } from "../data/auth.js";
+import { usuarioEditor } from "../data/auth.js";
 
 const NB_KEY = "acervo-giros-caderno-html";
 const NB_KEY_OLD = "acervo-giros-caderno";
 
 export function renderCaderno(app) {
-  const podeEditar = !!usuarioAtual();
+  const podeEditar = !!usuarioEditor();
   let salvo = localStorage.getItem(NB_KEY);
   if (!salvo) {
     const old = localStorage.getItem(NB_KEY_OLD);

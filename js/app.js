@@ -16,11 +16,13 @@ import { renderConfig } from "./views/config.js";
 import { renderAdmin } from "./views/admin.js";
 import { renderOrganizacao } from "./views/organizacao.js";
 import { renderProtocolo } from "./views/protocolo.js";
+import { renderAcessos } from "./views/acessos.js";
 import { renderFitasLista } from "./views/fitas-list.js";
 import { esc, toast, compararNomes } from "./ui/dom.js";
 import { iconClock, iconAlert } from "./ui/icons.js";
 import { abrirNovaDemanda } from "./views/cadastros.js";
-import { onAuthChange, loginComGoogle, logout } from "./data/auth.js";
+import { onAuthChange, loginComGoogle, logout, usuarioEditor, usuarioAdmin } from "./data/auth.js";
+import { pedirAcesso, minhaSolicitacao } from "./data/acessos.js";
 import { iniciarPortaoAcesso } from "./ui/access-gate.js";
 import { registrarRota, hashVoltar } from "./ui/nav-history.js";
 
@@ -104,6 +106,10 @@ async function router() {
       case "protocolo":
         setActiveNav("protocolo");
         await renderProtocolo(app, param);
+        break;
+      case "acessos":
+        setActiveNav("acessos");
+        await renderAcessos(app);
         break;
       default:
         placeholder("Página não encontrada", "Verifique o endereço.");
@@ -221,22 +227,41 @@ function ligarDrawer() {
 }
 
 /* ---------- Login (Google) ---------- */
-function renderAuthBox(usuario) {
+async function renderAuthBox(usuario) {
   // controla via CSS todo botão/campo marcado com .edit-only (ver
   // css/styles.css) — registrado cedo o bastante (antes do primeiro
-  // router()) pra já estar certo no primeiro desenho da página
-  document.body.classList.toggle("is-editor", !!usuario);
+  // router()) pra já estar certo no primeiro desenho da página.
+  // .admin-only (link "Acessos") só aparece pro admin principal.
+  document.body.classList.toggle("is-editor", usuarioEditor());
+  document.body.classList.toggle("is-admin", usuarioAdmin());
 
   const box = document.getElementById("auth-box");
   if (!box) return;
   if (usuario) {
-    box.innerHTML = `<button class="auth-chip" id="btn-logout" title="Sair">
-      ${usuario.photoURL ? `<img src="${esc(usuario.photoURL)}" class="auth-avatar" alt="" />` : ""}
-      <span>${esc(usuario.email)}</span>
-    </button>`;
+    // logado mas sem permissão de edição: pode pedir acesso ao admin
+    // (pedido aparece na tela Acessos)
+    const semPermissao = !usuarioEditor();
+    const jaPediu = semPermissao && !!(await minhaSolicitacao(usuario));
+    box.innerHTML = `
+      ${semPermissao ? `<span class="auth-sem-permissao">${jaPediu ? "Pedido de acesso enviado" : "Sem permissão de edição"}</span>
+        ${jaPediu ? "" : `<button class="auth-link" id="btn-pedir-acesso" type="button">Pedir acesso</button>`}` : ""}
+      <button class="auth-chip" id="btn-logout" title="Sair">
+        ${usuario.photoURL ? `<img src="${esc(usuario.photoURL)}" class="auth-avatar" alt="" />` : ""}
+        <span>${esc(usuario.email)}</span>
+      </button>`;
     box.querySelector("#btn-logout").addEventListener("click", async () => {
       if (!confirm("Sair da conta?")) return;
       await logout();
+    });
+    box.querySelector("#btn-pedir-acesso")?.addEventListener("click", async () => {
+      try {
+        await pedirAcesso(usuario);
+        toast("Pedido enviado. O acesso aparece assim que for liberado.");
+        renderAuthBox(usuario);
+      } catch (e) {
+        console.error(e);
+        toast("Não foi possível enviar o pedido. Tente de novo.");
+      }
     });
   } else {
     // quem escolheu "Leitor" no portão de entrada ainda pode virar
@@ -252,7 +277,14 @@ function renderAuthBox(usuario) {
     });
   }
 }
-onAuthChange(renderAuthBox);
+let _primeiraSessao = true;
+onAuthChange((usuario) => {
+  renderAuthBox(usuario);
+  // telas que checam usuarioEditor() na hora de desenhar precisam ser
+  // redesenhadas quando a sessão muda (a 1ª vez é o router() do fim)
+  if (_primeiraSessao) { _primeiraSessao = false; return; }
+  router();
+});
 
 // avisa quando uma escrita no Firestore falha por falta de login/permissão
 // e ninguém tratou o erro (ex.: botões de excluir, que não passam por modal)

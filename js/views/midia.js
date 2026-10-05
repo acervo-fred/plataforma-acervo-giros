@@ -10,7 +10,7 @@ import { abrirNovaMidia, abrirNovaEstrutura } from "./cadastros.js";
 import { openModal, fieldText, fieldTextarea, readValue } from "../ui/modal.js";
 import { suportaSelecaoPastas } from "../ui/pasta-tree.js";
 import { gerarListaArquivos, baixarTxt, TAMANHO_SEGURO_FIRESTORE } from "../ui/lista-arquivos.js";
-import { usuarioAtual } from "../data/auth.js";
+import { usuarioEditor } from "../data/auth.js";
 import { hashVoltar } from "../ui/nav-history.js";
 
 const CORVAR = {
@@ -297,7 +297,7 @@ async function gerarEPersistirLista(midia, btn, minBytes = 0) {
 }
 
 function abrirListaArquivos(midia) {
-  const editor = !!usuarioAtual();
+  const editor = !!usuarioEditor();
   openModal({
     title: "Lista de todos os arquivos",
     subtitle: midia.nome,

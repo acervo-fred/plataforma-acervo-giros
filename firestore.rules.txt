@@ -7,7 +7,8 @@ rules_version = '2';
 // ============================================================
 // Leitura livre pra todo mundo no Acervo (uso interno da equipe, sem
 // exigir login pra consultar). Escrita só pra quem estiver logado com
-// uma das contas Google autorizadas abaixo.
+// uma conta liberada na tela "Acessos" da plataforma (coleção
+// acervo_authorizedEmails) ou o admin principal.
 //
 // O Catálogo (catalogo_projetos) é diferente: fica restrito também
 // pra LEITURA, já que reúne links/senhas de material de clientes —
@@ -15,8 +16,8 @@ rules_version = '2';
 // disso, o Catálogo tem autorização em DUAS camadas (leitor/editor),
 // gerenciada dentro do próprio app (tela "Acessos", admin
 // acervo@girostraffic.page) via a coleção catalogo_authorizedEmails
-// — ver bloco próprio mais abaixo. Isso é independente da lista fixa
-// abaixo, que continua sendo só do Acervo.
+// — ver bloco próprio mais abaixo. Isso é independente dos acessos
+// do Acervo (acervo_authorizedEmails).
 //
 // Obs.: o Firestore não permite prefixo em path (ex.: acervo_{x}),
 // por isso cada coleção é listada explicitamente.
@@ -25,16 +26,16 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Acervo: quem pode editar é gerenciado DENTRO da plataforma (tela
+    // "Acessos", #/acessos, só o admin principal) — coleção
+    // acervo_authorizedEmails, doc id = e-mail. Não precisa mais
+    // republicar estas regras pra liberar/remover alguém.
+    function acervoAdminPrincipal() {
+      return request.auth != null && request.auth.token.email == "acervo@girostraffic.page";
+    }
     function emailAutorizado() {
-      return request.auth != null && request.auth.token.email in [
-        "acervo@girostraffic.page",
-        "gabrielscmiranda@gmail.com",
-        "datamanager@girostraffic.page",
-        "assistente.extra@girostraffic.page",
-        "assistente.principal@girostraffic.page",
-        "assistente@giros.com.br",
-        "producao.finalizacao@giros.com.br"
-      ];
+      return request.auth != null && (acervoAdminPrincipal()
+        || exists(/databases/$(database)/documents/acervo_authorizedEmails/$(request.auth.token.email)));
     }
 
     // ---- Catálogo: admin próprio + papel (leitor/editor) por e-mail ----
@@ -65,6 +66,23 @@ service cloud.firestore {
     match /acervo_organizacaoGlossario/{document=**}         { allow read: if true; allow write: if emailAutorizado(); }
     match /acervo_organizacaoMetadados/{document=**}         { allow read: if true; allow write: if emailAutorizado(); }
     match /acervo_organizacaoProjetosFaltantes/{document=**} { allow read: if true; allow write: if emailAutorizado(); }
+
+    // E-mails com permissão de edição no Acervo — cada um consulta só o
+    // próprio (pra saber se pode editar); só o admin principal lista e altera.
+    match /acervo_authorizedEmails/{email} {
+      allow get: if request.auth != null && (request.auth.token.email == email || acervoAdminPrincipal());
+      allow list, write: if acervoAdminPrincipal();
+    }
+
+    // Pedidos de acesso de edição ao Acervo. Qualquer logado cria/atualiza
+    // só o próprio pedido (doc id = uid); só o admin principal vê a fila
+    // e aprova/recusa.
+    match /acervo_accessRequests/{uid} {
+      allow get: if request.auth != null && (request.auth.uid == uid || acervoAdminPrincipal());
+      allow list, delete: if acervoAdminPrincipal();
+      allow create, update: if request.auth != null && request.auth.uid == uid
+                             && request.resource.data.email == request.auth.token.email;
+    }
 
     // Catálogo Projetos Giros — mesmo projeto Firebase, coleção isolada.
     // Restrito (leitura E escrita) — ao contrário do Acervo, aqui nem

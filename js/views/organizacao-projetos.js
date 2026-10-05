@@ -6,12 +6,12 @@
 import { store } from "../data/store.js";
 import { esc, compararNomes } from "../ui/dom.js";
 import { organizacaoProjetosTitulos as TITULOS } from "../data/mock.js";
-import { usuarioAtual } from "../data/auth.js";
+import { usuarioEditor } from "../data/auth.js";
 
 function corFaixa(v, s) { return v > s ? "" : s <= 3 ? "low" : s <= 6 ? "mid" : "high"; }
 
 export async function renderProjetosPrioridade(cont) {
-  const podeEditar = !!usuarioAtual();
+  const podeEditar = !!usuarioEditor();
   const prioridades = await store.getPrioridades();
   let linhas = TITULOS.map((titulo) => ({
     titulo,

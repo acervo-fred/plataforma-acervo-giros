@@ -1488,6 +1488,8 @@ a.proj-chip:hover { border-color: var(--accent); background: #d9eee2; }
   font-size: 12.5px; color: var(--text-faint); text-decoration: underline; padding: 4px 2px;
 }
 .auth-link:hover { color: var(--text-soft); }
+.auth-box { gap: 10px; }
+.auth-sem-permissao { font-size: 12.5px; color: var(--text-faint); }
 
 .toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(12px);
@@ -1524,6 +1526,36 @@ a.proj-chip:hover { border-color: var(--accent); background: #d9eee2; }
    body.is-editor é alternado em js/app.js (renderAuthBox), a cada
    mudança de sessão — inclusive antes do 1º desenho da página. */
 body:not(.is-editor) .edit-only { display: none !important; }
+/* link "Acessos" — só o admin principal (body.is-admin, js/app.js) */
+body:not(.is-admin) .admin-only { display: none !important; }
 /* campos que continuam visíveis pro Leitor (pra poder ler), só
    perdem a interatividade — usado em textareas/observações inline */
 body:not(.is-editor) .edit-only-inert { pointer-events: none; opacity: 0.75; }
+
+/* ================= ACESSOS (#/acessos, só admin) ================= */
+.acessos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.acessos-card-lista { grid-column: 1 / -1; }
+.acessos-corpo { padding: 6px 16px 14px; }
+.acessos-form { display: flex; gap: 8px; padding-top: 10px; }
+.acessos-form .input { flex: 1; min-width: 0; }
+.acessos-status { font-size: 13px; margin-top: 8px; min-height: 1em; }
+.acesso-linha {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.acesso-linha:last-child { border-bottom: none; }
+.acesso-info { min-width: 0; overflow-wrap: anywhere; font-size: 14px; }
+.acesso-email { color: var(--text); font-weight: 600; text-decoration: none; }
+.acesso-email:hover { color: var(--accent); text-decoration: underline; }
+.acesso-meta { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+.acesso-acoes { display: flex; gap: 6px; flex-shrink: 0; }
+.acesso-remover:hover { background: var(--c-rose-bg); color: var(--c-rose-fg); }
+.acessos-importar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 10px 0 4px; padding: 10px 12px; border-radius: var(--r-sm);
+  background: var(--accent-soft); font-size: 13.5px;
+}
+@media (max-width: 860px) {
+  .acessos-grid { grid-template-columns: 1fr; }
+  .acessos-importar, .acesso-linha { flex-wrap: wrap; }
+}

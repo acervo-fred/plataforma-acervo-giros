@@ -8,13 +8,13 @@
 import { store } from "../data/store.js";
 import { esc } from "../ui/dom.js";
 import { abrirNovoHistorico } from "./cadastros.js";
-import { usuarioAtual } from "../data/auth.js";
+import { usuarioEditor } from "../data/auth.js";
 
 export async function renderEquipe(app) {
   const [listas, historico, observacoes] = await Promise.all([
     store.getListas(), store.listHistorico(), store.getEquipeObservacoes(),
   ]);
-  const podeEditar = !!usuarioAtual();
+  const podeEditar = !!usuarioEditor();
   const nomes = listas.responsaveis || [];
   let ativo = nomes[0] || "";
 
