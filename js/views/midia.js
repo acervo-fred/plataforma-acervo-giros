@@ -1,9 +1,9 @@
 /* Detalhe da Mídia — dados da mídia, aviso de "mistura" (mais de um
-   projeto dentro), lista clicável de Projetos armazenados (cada um na
+   projeto dentro), Estrutura das pastas em árvore, lista clicável de Projetos armazenados (cada um na
    cor do próprio status), e o campo Conteúdo (observações). */
 
 import { store } from "../data/store.js";
-import { esc, formatAno, toast } from "../ui/dom.js";
+import { esc, formatAno, toast, compararNomes } from "../ui/dom.js";
 import { badgeFromLista, corDoValor, chipsProjetos } from "../ui/badges.js";
 import { fmtUso } from "../ui/formato.js";
 import { abrirNovaMidia, abrirNovaEstrutura } from "./cadastros.js";
@@ -68,13 +68,14 @@ export async function renderMidia(app, id) {
 
     ${mistura ? `<div class="warn">⚠ Esta mídia contém ${projetos.length} projetos diferentes.</div>` : ""}
 
-    <!-- ESTRUTURA (pastas desta mídia) — recolhível: mostra só as 6
-         primeiras linhas até a pessoa pedir pra ver o resto ---->
+    <!-- ESTRUTURA (pastas desta mídia) — em árvore, montada pelos caminhos -->
     <section class="section">
       <div class="section-head"><h2>Estrutura das Pastas e Arquivos</h2>
-        <div class="row-end edit-only">
-          <a class="btn btn-primary" href="#/midia-pastas/${esc(midia.id)}">Importar caminho</a>
-          <button class="btn btn-ghost" data-act="nova-pasta">+ Nova pasta</button>
+        <div class="row-end">
+          ${estrutura.length ? `<button class="btn btn-ghost" data-act="abrir-tudo">Expandir tudo</button>
+          <button class="btn btn-ghost" data-act="fechar-tudo">Recolher tudo</button>` : ""}
+          <a class="btn btn-primary edit-only" href="#/midia-pastas/${esc(midia.id)}">Importar caminho</a>
+          <button class="btn btn-ghost edit-only" data-act="nova-pasta">+ Nova pasta</button>
         </div>
       </div>
       <div class="list-card" id="estrutura">
@@ -114,17 +115,6 @@ export async function renderMidia(app, id) {
     if (row && row.dataset.projeto) location.hash = `#/projeto/${row.dataset.projeto}`;
   });
 
-  // "mostrar mais pastas" (estrutura recolhida em 6 linhas)
-  const toggleEst = app.querySelector("#estrutura-toggle");
-  if (toggleEst) {
-    const extra = app.querySelector("#estrutura-extra");
-    const n = Number(toggleEst.dataset.extra);
-    toggleEst.addEventListener("click", () => {
-      extra.hidden = !extra.hidden;
-      toggleEst.textContent = extra.hidden ? `Mostrar mais ${n} pasta${n > 1 ? "s" : ""}` : "Mostrar menos";
-    });
-  }
-
   const acoes = {
     "editar": () => abrirNovaMidia(midia),
     "excluir": async () => {
@@ -135,6 +125,8 @@ export async function renderMidia(app, id) {
     "nova-pasta": () => abrirNovaEstrutura({ midiaIdFixo: midia.id }),
     "gerar-lista": (btn) => abrirOpcoesGerarLista(midia, btn),
     "ver-lista": () => abrirListaArquivos(midia),
+    "abrir-tudo": () => app.querySelectorAll("#estrutura [data-toggle-e]").forEach((r) => alternarNo(r, true)),
+    "fechar-tudo": () => app.querySelectorAll("#estrutura [data-toggle-e]").forEach((r) => alternarNo(r, false)),
   };
   app.querySelectorAll("[data-act]").forEach((btn) =>
     btn.addEventListener("click", () => acoes[btn.dataset.act]?.(btn))
@@ -145,7 +137,10 @@ export async function renderMidia(app, id) {
   app.querySelector("#estrutura").addEventListener("click", async (ev) => {
     const edBtn = ev.target.closest("[data-edit-e]");
     const delBtn = ev.target.closest("[data-del-e]");
-    if (edBtn) {
+    const toggleRow = ev.target.closest("[data-toggle-e]");
+    if (!edBtn && !delBtn && toggleRow && !ev.target.closest("a")) {
+      alternarNo(toggleRow);
+    } else if (edBtn) {
       const rec = estPorId[edBtn.dataset.id];
       if (rec) abrirNovaEstrutura({ midiaIdFixo: midia.id }, rec);
     } else if (delBtn) {
@@ -172,32 +167,84 @@ function kpi(label, valor, sub = "") {
   </div>`;
 }
 
-// mostra só as 6 primeiras pastas; o resto fica num wrapper recolhido,
-// com um botão "mostrar mais" ao final da lista
-const ESTRUTURA_INICIAL = 6;
-function estruturaHtml(estrutura) {
-  if (!estrutura.length) return `<div class="empty">Nenhuma pasta registrada nesta mídia.</div>`;
-  const visivel = estrutura.slice(0, ESTRUTURA_INICIAL);
-  const resto = estrutura.slice(ESTRUTURA_INICIAL);
-  const rows = visivel.map((e) => estruturaRowMidia(e)).join("");
-  if (!resto.length) return rows;
-  return `${rows}
-    <div class="lc-extra" id="estrutura-extra" hidden>${resto.map((e) => estruturaRowMidia(e)).join("")}</div>
-    <button type="button" class="lc-toggle" id="estrutura-toggle" data-extra="${resto.length}">Mostrar mais ${resto.length} pasta${resto.length > 1 ? "s" : ""}</button>`;
+// Estrutura em árvore, montada a partir do caminho completo de cada
+// pasta cadastrada. Pastas intermediárias que não têm registro próprio
+// (ex.: "HD 03" em "HDs/HD 03/F3") aparecem só como nó de navegação,
+// sem projeto/tipo/ações. Tudo começa recolhido, menos o primeiro nível.
+const ICONE_PASTA = `<svg class="tm-node-ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>`;
+
+function montarArvoreEstrutura(estrutura) {
+  const raiz = { filhos: new Map() };
+  for (const e of estrutura) {
+    const partes = String(e.caminho || "").split("/").map((p) => p.trim()).filter(Boolean);
+    let no = raiz;
+    partes.forEach((nome, i) => {
+      if (!no.filhos.has(nome)) {
+        no.filhos.set(nome, { nome, caminho: partes.slice(0, i + 1).join("/"), filhos: new Map(), registros: [] });
+      }
+      no = no.filhos.get(nome);
+    });
+    if (no !== raiz) no.registros.push(e);
+  }
+  return raiz;
 }
 
-function estruturaRowMidia(e) {
-  return `<div class="list-row">
-    <div class="lr-main">
-      <div class="lr-title">${esc(e.caminho)} <span class="muted" style="font-weight:400">· ${esc(e.tipoMaterial)}</span></div>
-      <div class="lr-sub"><a href="#/projeto/${esc(e.projetoId)}" style="color:var(--accent)">${esc(e.projetoNome)}</a>${e.resumo ? " · " + esc(e.resumo) : ""}</div>
+function ordenarFilhos(no) {
+  return [...no.filhos.values()].sort((a, b) => compararNomes(a.nome, b.nome));
+}
+
+function contarSubpastas(no) {
+  let n = 0;
+  for (const f of no.filhos.values()) n += 1 + contarSubpastas(f);
+  return n;
+}
+
+function estruturaHtml(estrutura) {
+  if (!estrutura.length) return `<div class="empty">Nenhuma pasta registrada nesta mídia.</div>`;
+  const raiz = montarArvoreEstrutura(estrutura);
+  return `<div class="tm-tree est-tree">${ordenarFilhos(raiz).map((f) => estruturaNoHtml(f, 0)).join("")}</div>`;
+}
+
+function estruturaNoHtml(no, profundidade) {
+  const filhos = ordenarFilhos(no);
+  const temFilhos = filhos.length > 0;
+  const aberto = temFilhos && profundidade === 0;
+  const indent = 6 + profundidade * 18;
+  const rec = no.registros[0];
+  const sub = temFilhos ? contarSubpastas(no) : 0;
+  return `<div class="tm-node">
+    <div class="tm-node-row${rec ? "" : " est-node--intermediaria"}" style="padding-left:${indent}px"${temFilhos ? ` data-toggle-e` : ""}>
+      <button type="button" class="tm-caret${temFilhos ? "" : " tm-caret--vazio"}" ${temFilhos ? "" : `tabindex="-1"`}>${temFilhos ? (aberto ? "▾" : "▸") : ""}</button>
+      ${ICONE_PASTA}
+      <span class="tm-node-nome" title="${esc(no.caminho)}">${esc(no.nome)}</span>
+      ${sub ? `<span class="est-node-count">${sub} subpasta${sub > 1 ? "s" : ""}</span>` : ""}
+      ${no.registros.map((e) => estruturaDadosHtml(e)).join("")}
     </div>
+    ${temFilhos ? `<div class="tm-node-filhos"${aberto ? "" : ` style="display:none"`}>${filhos.map((f) => estruturaNoHtml(f, profundidade + 1)).join("")}</div>` : ""}
+  </div>`;
+}
+
+// tipo, projeto, resumo, LTO e ações de uma pasta cadastrada
+function estruturaDadosHtml(e) {
+  return `<span class="est-node-dados">
+      ${e.tipoMaterial ? `<span class="muted">${esc(e.tipoMaterial)}</span>` : ""}
+      <a href="#/projeto/${esc(e.projetoId)}" style="color:var(--accent)">${esc(e.projetoNome)}</a>
+      ${e.resumo ? `<span class="muted est-node-resumo" title="${esc(e.resumo)}">${esc(e.resumo)}</span>` : ""}
+    </span>
     ${e.arquivadoLto ? `<span class="tag">${esc(e.arquivadoLto)}</span>` : ""}
     <span class="lr-actions edit-only">
       <button class="icon-btn" data-edit-e data-id="${esc(e.id)}" title="Editar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
       <button class="icon-btn danger" data-del-e data-id="${esc(e.id)}" title="Excluir"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
-    </span>
-  </div>`;
+    </span>`;
+}
+
+// abre/fecha um nó (ou todos, com abrirTudo/fecharTudo)
+function alternarNo(row, abrir) {
+  const filhos = row.nextElementSibling;
+  if (!filhos || !filhos.classList.contains("tm-node-filhos")) return;
+  const vaiAbrir = abrir ?? filhos.style.display === "none";
+  filhos.style.display = vaiAbrir ? "" : "none";
+  row.querySelector(".tm-caret").textContent = vaiAbrir ? "▾" : "▸";
 }
 
 function listaArquivosRow(midia) {
