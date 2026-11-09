@@ -368,6 +368,7 @@ const mockStore = {
       temporadas: dados.temporadas || null,
       episodios: dados.episodios || null,
       partes: dados.partes || [],
+      observacoes: dados.observacoes || "",
       capa: dados.capa || "",
       linksExternos: dados.linksExternos || [],
       protocoloArquivamento: protocoloZerado(),

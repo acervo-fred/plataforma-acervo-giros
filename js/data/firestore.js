@@ -273,7 +273,7 @@ export const firestoreStore = {
     const ref = await addDoc(collection(fdb, COLLECTIONS.projetos), {
       nome: d.nome, ano: d.ano, statusProjeto: d.statusProjeto,
       formato: d.formato || "Longa-metragem", temporadas: d.temporadas || null, episodios: d.episodios || null,
-      partes: d.partes || [],
+      partes: d.partes || [], observacoes: d.observacoes || "",
       capa: d.capa || "", linksExternos: d.linksExternos || [],
       protocoloArquivamento: protocoloZerado(),
     });

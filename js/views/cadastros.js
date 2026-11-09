@@ -65,6 +65,7 @@ export async function abrirNovoProjeto(existente = null) {
         </div>
         <div class="field-hint">${ed ? "Temporadas e versões se adicionam e editam pelas abas na página do projeto." : "Cria as abas de temporada já vazias; dá pra adicionar mais depois, na página do projeto."}</div>
       </div>
+      ${fieldTextarea("observacoes", "Observações", { value: p.observacoes || "", hint: "Aparece na capa do projeto, junto com formato e ano. Ex.: só prospecção, não chegou a ser gravado." })}
       <div class="field">
         <label>Capa do projeto</label>
         <div class="capa-picker" id="capa-picker">
@@ -126,6 +127,7 @@ export async function abrirNovoProjeto(existente = null) {
         formato,
         episodios: formato === "Série" ? Number(readValue(form, "episodios")) || null : null,
         capa: readValue(form, "capa"),
+        observacoes: readValue(form, "observacoes") || "",
       };
       if (ed) await store.updateProjeto(p.id, campos);
       else {

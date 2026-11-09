@@ -53,6 +53,7 @@ export async function renderProjeto(app, id, aba = "") {
       <span class="proj-banner-badge">${badgeFromLista(listas.statusProjeto, projeto.statusProjeto)}</span>
       <h1 class="proj-banner-title">${esc(projeto.nome)}</h1>
       <div class="proj-banner-sub">${esc(subtituloProjeto(projeto))}</div>
+      ${projeto.observacoes ? `<div class="proj-banner-obs">${esc(projeto.observacoes)}</div>` : ""}
     </div>
 
     <div class="proj-toolbar">
