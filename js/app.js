@@ -48,7 +48,7 @@ async function router() {
   }
   const hash = location.hash;
   registrarRota(hash);
-  const [rota, param] = hash.replace(/^#\//, "").split("/");
+  const [rota, param, sub] = hash.replace(/^#\//, "").split("/");
 
   window.scrollTo(0, 0);
 
@@ -61,7 +61,7 @@ async function router() {
         break;
       case "projeto":
         setActiveNav("projetos");
-        await renderProjeto(app, param);
+        await renderProjeto(app, param, sub);
         break;
       case "midias":
         setActiveNav("midias");

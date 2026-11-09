@@ -367,6 +367,7 @@ const mockStore = {
       formato: dados.formato || "Longa-metragem",
       temporadas: dados.temporadas || null,
       episodios: dados.episodios || null,
+      partes: dados.partes || [],
       capa: dados.capa || "",
       linksExternos: dados.linksExternos || [],
       protocoloArquivamento: protocoloZerado(),
@@ -387,6 +388,7 @@ const mockStore = {
       projetosArmazenados: dados.projetosArmazenados || [],
       conteudo: dados.conteudo || "",
       conteudoPorProjeto: dados.conteudoPorProjeto || {},
+      partesPorProjeto: dados.partesPorProjeto || {},
     };
     db.midias.push(novo);
     persistir();

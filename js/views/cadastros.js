@@ -10,6 +10,7 @@ import {
   openModal, fieldText, fieldTextarea, fieldSelect, readValue,
 } from "../ui/modal.js";
 import { imagemParaDataUrl } from "../ui/imagem.js";
+import { temporadaVazia, listaPartes, rotuloParte } from "./projeto-partes.js";
 
 // formato do projeto — fixo (não é uma lista configurável em Configurações,
 // como statusProjeto/tipoMidia etc.), só controla se aparecem os campos
@@ -59,9 +60,10 @@ export async function abrirNovoProjeto(existente = null) {
       </div>
       <div id="formato-serie" ${formatoInicial === "Série" ? "" : "hidden"}>
         <div class="field-2col">
-          ${fieldText("temporadas", "Temporadas", { type: "number", value: p.temporadas || "", placeholder: "Ex.: 2" })}
-          ${fieldText("episodios", "Episódios", { type: "number", value: p.episodios || "", placeholder: "Ex.: 16" })}
+          ${fieldText("episodios", "Episódios (total)", { type: "number", value: p.episodios || "", placeholder: "Ex.: 16" })}
+          ${ed ? "<div></div>" : fieldText("temporadas", "Temporadas", { type: "number", value: "", placeholder: "Ex.: 2" })}
         </div>
+        <div class="field-hint">${ed ? "Temporadas e versões se adicionam e editam pelas abas na página do projeto." : "Cria as abas de temporada já vazias; dá pra adicionar mais depois, na página do projeto."}</div>
       </div>
       <div class="field">
         <label>Capa do projeto</label>
@@ -122,12 +124,18 @@ export async function abrirNovoProjeto(existente = null) {
         ano: Number(readValue(form, "ano")) || 1900,
         statusProjeto: readValue(form, "statusProjeto"),
         formato,
-        temporadas: formato === "Série" ? Number(readValue(form, "temporadas")) || null : null,
         episodios: formato === "Série" ? Number(readValue(form, "episodios")) || null : null,
         capa: readValue(form, "capa"),
       };
       if (ed) await store.updateProjeto(p.id, campos);
-      else await store.addProjeto(campos);
+      else {
+        const qtd = formato === "Série" ? Math.min(Number(readValue(form, "temporadas")) || 0, 50) : 0;
+        if (qtd) {
+          campos.temporadas = qtd;
+          campos.partes = Array.from({ length: qtd }, (_, i) => temporadaVazia(i + 1));
+        }
+        await store.addProjeto(campos);
+      }
       avisarMudanca();
     },
   });
@@ -186,6 +194,9 @@ export async function abrirNovaMidia(existente = null, { projetoIdFixo = null } 
       const marcados = new Set(m.projetosArmazenados || []);
       if (projetoFixo) marcados.add(projetoFixo.id);
       const state = { ...(m.conteudoPorProjeto || {}) };
+      // temporadas/versões por projeto (só pra projetos que têm partes)
+      const partesState = Object.fromEntries(Object.entries(m.partesPorProjeto || {}).map(([k, v]) => [k, new Set(v)]));
+      const partesDoProjeto = Object.fromEntries(projetos.map((p) => [p.id, listaPartes(p)]));
       const estLista = form.querySelector("#est-lista");
       const deletedIds = new Set();
 
@@ -223,9 +234,19 @@ export async function abrirNovaMidia(existente = null, { projetoIdFixo = null } 
           const row = document.createElement("div");
           row.className = "proj-conteudo-row";
           row.innerHTML = `<label class="proj-cb"><input type="checkbox" name="projetosArmazenados" value="${esc(it.value)}" ${checked ? "checked" : ""}/> ${esc(it.label)}</label>
-            ${checked ? `<input type="text" data-pid="${esc(it.value)}" value="${esc(state[it.value] || "")}" placeholder="Conteúdo nesta mídia…" class="proj-conteudo-input" />` : ""}`;
+            ${checked ? `<input type="text" data-pid="${esc(it.value)}" value="${esc(state[it.value] || "")}" placeholder="Conteúdo nesta mídia…" class="proj-conteudo-input" />` : ""}
+            ${checked && partesDoProjeto[it.value]?.length ? `<div class="proj-partes">
+              <span class="muted">Temporada/versão:</span>
+              ${partesDoProjeto[it.value].map((x) => `<label class="proj-parte-cb"><input type="checkbox" data-parte-pid="${esc(it.value)}" value="${esc(x.id)}" ${partesState[it.value]?.has(x.id) ? "checked" : ""}/> ${esc(rotuloParte(x))}</label>`).join("")}
+              <span class="muted proj-partes-hint">nenhuma marcada = obra toda</span>
+            </div>` : ""}`;
           lista.appendChild(row);
-          row.querySelector("input[type=checkbox]").addEventListener("change", (e) => {
+          row.querySelectorAll("input[data-parte-pid]").forEach((cb) => cb.addEventListener("change", () => {
+            const pid = cb.dataset.partePid;
+            if (!partesState[pid]) partesState[pid] = new Set();
+            if (cb.checked) partesState[pid].add(cb.value); else partesState[pid].delete(cb.value);
+          }));
+          row.querySelector("input[name=projetosArmazenados]").addEventListener("change", (e) => {
             if (e.target.checked) marcados.add(it.value);
             else marcados.delete(it.value);
             desenhar();
@@ -239,6 +260,15 @@ export async function abrirNovaMidia(existente = null, { projetoIdFixo = null } 
       desenhar();
 
       form._getProjetosArmazenados = () => [...marcados];
+      form._getPartesPorProjeto = () => {
+        const result = {};
+        marcados.forEach((pid) => {
+          const validos = new Set((partesDoProjeto[pid] || []).map((x) => x.id));
+          const ids = [...(partesState[pid] || [])].filter((i) => validos.has(i));
+          if (ids.length) result[pid] = ids;
+        });
+        return result;
+      };
       form._getConteudoPorProjeto = () => {
         salvarValores();
         const result = {};
@@ -312,6 +342,7 @@ export async function abrirNovaMidia(existente = null, { projetoIdFixo = null } 
         projetosArmazenados: form._getProjetosArmazenados(),
         conteudo: readValue(form, "observacoes"),
         conteudoPorProjeto: form._getConteudoPorProjeto(),
+        partesPorProjeto: form._getPartesPorProjeto(),
       };
 
       let midiaId;

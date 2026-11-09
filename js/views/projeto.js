@@ -12,11 +12,12 @@ import { openModal, fieldText, fieldSelect, readValue } from "../ui/modal.js";
 import { abrirNovoProjeto, abrirNovaMidia, abrirNovoHistorico, abrirNovaDemanda } from "./cadastros.js";
 import { hashVoltar } from "../ui/nav-history.js";
 import { pctProjeto, progressoHtml } from "./protocolo.js";
+import { temAbas, listaPartes, rotuloParte, abasPartesHtml, resumoPartesHtml, painelParteHtml, ligarPartes, etiquetasPartesHtml } from "./projeto-partes.js";
 
 const TIPOS_LINK = ["Vimeo", "YouTube", "Site", "Drive", "Instagram", "Outro"];
 const STATUS_FECHADOS = ["Concluída", "Cancelada"];
 
-export async function renderProjeto(app, id) {
+export async function renderProjeto(app, id, aba = "") {
   const projeto = await store.getProjeto(id);
   if (!projeto) {
     app.innerHTML = `<a class="back-link" href="${esc(hashVoltar("#/"))}">← Voltar</a>
@@ -39,6 +40,10 @@ export async function renderProjeto(app, id) {
   const ltoUsado = somaUsado(midias.filter((m) => m.tipo === "LTO"));
   const links = projeto.linksExternos || [];
 
+  // temporadas/versões: abas "Visão geral" + uma por parte (#/projeto/:id/:parteId)
+  const abas = temAbas(projeto);
+  const abaTemp = abas && aba ? aba : null;
+
   app.innerHTML = `
     <a class="back-link" href="${esc(hashVoltar("#/"))}">← Voltar</a>
 
@@ -53,11 +58,14 @@ export async function renderProjeto(app, id) {
     <div class="proj-toolbar">
       <a class="btn btn-ghost" href="#/protocolo/${esc(projeto.id)}">Protocolo de arquivamento</a>
       <div class="row-end edit-only">
+        ${abas ? "" : `<button class="btn btn-ghost" data-temp-act="nova" title="Dividir em versões (ex.: longa e série) ou temporadas">+ Versão / temporada</button>`}
         <button class="btn" data-act="editar">Editar</button>
         <button class="btn btn-ghost" data-act="excluir" title="Excluir projeto"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
       </div>
     </div>
 
+    ${abas ? abasPartesHtml(projeto, abaTemp) : ""}
+    ${abaTemp != null ? `<div id="painel-temporada">${painelParteHtml(projeto, abaTemp, listas, midias, (m) => midiaRow(m, listas, projeto))}</div>` : `
     <!-- KPIs -->
     <div class="kpi-row">
       ${kpi("Status atual", badgeFromLista(listas.statusProjeto, projeto.statusProjeto), "", true)}
@@ -69,11 +77,12 @@ export async function renderProjeto(app, id) {
     <div class="proj-cols">
       <!-- COLUNA PRINCIPAL -->
       <div class="proj-col-main">
+        ${abas ? resumoPartesHtml(projeto, listas) : ""}
         <section class="section">
           <div class="section-head"><h2>Mídias vinculadas</h2>
             <button class="btn btn-ghost edit-only" data-act="nova-midia">+ Nova mídia</button></div>
           <div class="list-card" id="midias">
-            ${midias.length ? [...midias].sort((a, b) => compararNomes(a.nome, b.nome)).map((m) => midiaRow(m, listas)).join("")
+            ${midias.length ? [...midias].sort((a, b) => compararNomes(a.nome, b.nome)).map((m) => midiaRow(m, listas, projeto)).join("")
               : `<div class="empty">Nenhuma mídia contém este projeto.</div>`}
           </div>
         </section>
@@ -123,7 +132,23 @@ export async function renderProjeto(app, id) {
           : `<div class="empty">Nenhuma fita vinculada a este projeto.</div>`}
       </div>
     </section>
+    `}
   `;
+
+  // editar/excluir o projeto (cabeçalho) — em qualquer aba
+  ligaCabecalho(app, projeto);
+
+  // ações das abas ("+ Adicionar" / "+ Versão / temporada")
+  ligarPartes(app, projeto, abaTemp, listas);
+
+  // aba de temporada/versão: só o cabeçalho do projeto + o painel dela
+  if (abaTemp != null) {
+    app.querySelector("#midias")?.addEventListener("click", (e) => {
+      const row = e.target.closest("[data-midia]");
+      if (row) location.hash = `#/midia/${row.dataset.midia}`;
+    });
+    return;
+  }
 
   // navegação para detalhe de mídia (ignora cliques nos botões de ação)
   app.querySelector("#midias").addEventListener("click", (e) => {
@@ -134,18 +159,12 @@ export async function renderProjeto(app, id) {
 
   // ações do projeto (cabeçalho) e de adicionar itens
   const acoes = {
-    "editar": () => abrirNovoProjeto(projeto),
-    "excluir": async () => {
-      if (!confirm(`Excluir o projeto "${projeto.nome}"?\n\nIsto remove também a estrutura, o histórico e as pendências deste projeto, e tira o projeto das mídias. Não dá para desfazer.`)) return;
-      await store.removeProjeto(projeto.id);
-      location.hash = "#/";
-    },
     "nova-midia": () => abrirNovaMidia(null, { projetoIdFixo: projeto.id }),
     "novo-historico": () => abrirNovoHistorico({ projetoIdFixo: projeto.id }),
     "nova-demanda": () => abrirNovaDemanda(projeto.id),
     "novo-link": () => abrirLink(projeto, links),
   };
-  app.querySelectorAll("[data-act]").forEach((btn) =>
+  app.querySelectorAll(".proj-cols [data-act]").forEach((btn) =>
     btn.addEventListener("click", () => acoes[btn.dataset.act]?.(btn))
   );
 
@@ -184,12 +203,35 @@ export async function renderProjeto(app, id) {
     (rec) => [`Excluir a pendência "${rec.pendencia}"?`, () => store.removeDemanda(rec.id)]);
 }
 
+// editar/excluir o projeto (botões do cabeçalho, em qualquer aba)
+function ligaCabecalho(app, projeto) {
+  const acoes = {
+    "editar": () => abrirNovoProjeto(projeto),
+    "excluir": async () => {
+      if (!confirm(`Excluir o projeto "${projeto.nome}"?\n\nIsto remove também a estrutura, o histórico e as pendências deste projeto, e tira o projeto das mídias. Não dá para desfazer.`)) return;
+      await store.removeProjeto(projeto.id);
+      location.hash = "#/";
+    },
+  };
+  app.querySelectorAll(".proj-toolbar [data-act]").forEach((btn) =>
+    btn.addEventListener("click", () => acoes[btn.dataset.act]?.(btn))
+  );
+}
+
 // "Série (2 temporadas · 16 episódios) · 2024" / "Longa-metragem · 2024"
+// / "2 versões (Longa · Série) · 2024"
 function subtituloProjeto(p) {
   const formato = p.formato || "Longa-metragem";
+  const partes = listaPartes(p);
+  const versoes = partes.filter((x) => x.tipo !== "Temporada");
+  const qtdTemp = partes.length - versoes.length;
+  if (versoes.length) {
+    const extra = qtdTemp ? ` · ${qtdTemp} temporada${qtdTemp > 1 ? "s" : ""}` : "";
+    return `${versoes.length} ${versoes.length > 1 ? "versões" : "versão"} (${versoes.map(rotuloParte).join(" · ")})${extra} · ${formatAno(p.ano)}`;
+  }
   const bits = [];
   if (formato === "Série") {
-    if (p.temporadas) bits.push(`${p.temporadas} temporada${p.temporadas > 1 ? "s" : ""}`);
+    if (qtdTemp) bits.push(`${qtdTemp} temporada${qtdTemp > 1 ? "s" : ""}`);
     if (p.episodios) bits.push(`${p.episodios} episódio${p.episodios > 1 ? "s" : ""}`);
   }
   const rotulo = bits.length ? `${formato} (${bits.join(" · ")})` : formato;
@@ -265,13 +307,14 @@ function kpiProtocolo(projeto) {
 }
 
 // linha de mídia vinculada (lista, não mais grade de ícones)
-function midiaRow(m, listas) {
+function midiaRow(m, listas, projeto = null) {
   return `<div class="list-row clickable" data-midia="${esc(m.id)}">
     <span class="midia-row-ic"><img src="${esc(iconeMidia(m.tipo, listas))}" alt="" loading="lazy"></span>
     <div class="lr-main">
       <div class="lr-title">${esc(m.nome)}</div>
       <div class="lr-sub">${esc(m.tipo)} · ${esc(m.local || "sem local")} · ${esc(m.capacidade || "—")}</div>
     </div>
+    ${projeto ? etiquetasPartesHtml(projeto, m) : ""}
     ${badgeFromLista(listas.statusMidia, m.statusMidia)}
   </div>`;
 }
