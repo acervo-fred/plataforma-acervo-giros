@@ -23,8 +23,10 @@ export async function renderDashboard(app) {
   // ---- números ----
   const totalProjetos = projetos.length;
   const totalMidias = midias.length;
-  const pendentesAbertas = demandas.filter((d) => d.status === "Aberta" || d.status === "Em andamento").length;
-  const midiasMistura = midias.filter((m) => (m.projetosArmazenados || []).length > 1).length;
+  const listaPendentes = demandas.filter((d) => d.status === "Aberta" || d.status === "Em andamento");
+  const listaMistura = midias.filter((m) => (m.projetosArmazenados || []).length > 1);
+  const pendentesAbertas = listaPendentes.length;
+  const midiasMistura = listaMistura.length;
 
   // ---- contagens p/ gráficos ----
   const valoresTipoMidia = listas.tipoMidia.map((t) => (typeof t === "string" ? t : t.valor));
@@ -75,8 +77,8 @@ export async function renderDashboard(app) {
     <div class="stat-grid">
       ${stat(totalProjetos, "Projetos", "accent")}
       ${stat(totalMidias, "Mídias")}
-      ${stat(pendentesAbertas, "Pendências em aberto")}
-      ${statMistura(midiasMistura)}
+      ${stat(pendentesAbertas, "Pendências em aberto", "", popPendencias(listaPendentes, nomePorId))}
+      ${statMistura(midiasMistura, popMistura(listaMistura, nomePorId))}
     </div>
 
     <div class="chart-card" style="margin-bottom:24px">
@@ -134,18 +136,41 @@ function contar(categorias, valores) {
   return Object.entries(mapa).map(([label, n]) => ({ label, n }));
 }
 
-function stat(num, label, cls = "") {
-  return `<div class="stat ${cls}">
+function stat(num, label, cls = "", pop = "") {
+  return `<div class="stat ${cls}${pop ? " has-pop" : ""}"${pop ? ' tabindex="0"' : ""}>
     <div class="stat-num">${num}</div>
     <div class="stat-label">${esc(label)}</div>
+    ${pop}
   </div>`;
 }
 
-function statMistura(n) {
-  return `<div class="stat warn-stat">
+function statMistura(n, pop = "") {
+  return `<div class="stat warn-stat${pop ? " has-pop" : ""}"${pop ? ' tabindex="0"' : ""}>
     <div class="stat-num ${n > 0 ? "is-amber" : ""}">${n}</div>
     <div class="stat-label">Mídias com mistura</div>
+    ${pop}
   </div>`;
+}
+
+/* lista suspensa que aparece ao passar o mouse (ou focar) no KPI */
+function popLista(itens) {
+  if (!itens.length) return "";
+  return `<div class="stat-pop" role="list">${itens.join("")}</div>`;
+}
+function popPendencias(lista, nomePorId) {
+  return popLista(lista.map((d) => `<a class="stat-pop-item" role="listitem" href="#/projeto/${esc(d.projetoId)}">
+      <span class="stat-pop-title">${esc(d.pendencia || "—")}</span>
+      <span class="stat-pop-sub">${esc(nomePorId[d.projetoId] || "—")} · ${esc(d.status || "")}${d.prioridade ? ` · ${esc(d.prioridade)}` : ""}</span>
+    </a>`));
+}
+function popMistura(lista, nomePorId) {
+  return popLista(lista.map((m) => {
+    const nomes = (m.projetosArmazenados || []).map((id) => nomePorId[id]).filter(Boolean);
+    return `<a class="stat-pop-item" role="listitem" href="#/midia/${esc(m.id)}">
+      <span class="stat-pop-title">${esc(m.nome || "—")} <span class="stat-pop-n">${(m.projetosArmazenados || []).length} projetos</span></span>
+      <span class="stat-pop-sub">${esc(nomes.join(" · ") || "—")}</span>
+    </a>`;
+  }));
 }
 
 /* gráfico de barras horizontal; cor vem da lista (se tiver) ou de corPadrao */
