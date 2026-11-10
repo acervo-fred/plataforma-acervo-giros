@@ -14,6 +14,7 @@
   --low:#c62828; --mid:#e65100; --high:#2e7d52; --amber:#b7791f;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+html{font-size:19px}
 body{background:var(--bg);color:var(--text);font-family:"DM Sans",system-ui,sans-serif;min-height:100vh;padding-bottom:70px}
 button,input,select,textarea{font:inherit}
 
@@ -37,6 +38,7 @@ button,input,select,textarea{font:inherit}
 .controls select{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:.8rem;color:var(--soft)}
 .btn{background:var(--surface);border:1px solid var(--border);color:var(--muted);font-size:.78rem;font-weight:500;padding:7px 13px;border-radius:7px;cursor:pointer;white-space:nowrap}
 .btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+.btn[hidden]{display:none}
 .btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 .btn.blue{border-color:var(--blue);color:var(--blue)}
 .btn.blue:hover{background:var(--blue-light)}
@@ -65,11 +67,11 @@ td.dur{white-space:nowrap;color:var(--soft);font-size:.78rem}
 .dots{display:flex;gap:4px;align-items:center}
 .dots .nota{font-family:"DM Serif Display",serif;font-size:1.05rem;color:var(--muted);width:22px;text-align:right;margin-right:4px}
 .dots .nota.tem{color:var(--accent)}
-.dots button{width:21px;height:21px;border-radius:50%;border:2px solid var(--border);background:transparent;cursor:pointer;font-size:.6rem;font-weight:700;color:transparent;display:flex;align-items:center;justify-content:center;padding:0;transition:transform .1s}
+.dots button{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);background:transparent;cursor:pointer;font-size:.6rem;font-weight:700;color:transparent;display:flex;align-items:center;justify-content:center;padding:0;transition:transform .1s}
 .dots button:hover{transform:scale(1.25);border-color:var(--accent);color:var(--muted)}
 .dots button.on{border-color:transparent;color:#fff}
 .dots button.on.low{background:var(--low)} .dots button.on.mid{background:var(--mid)} .dots button.on.high{background:var(--high)}
-td.obs{width:250px;min-width:200px}
+td.obs{width:280px;min-width:220px}
 .obs-in{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 9px;font-size:.78rem;color:var(--text);resize:vertical;min-height:32px;outline:none}
 .obs-in:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(46,125,82,.1)}
 .obs-in.salvo{border-color:var(--accent);background:var(--accent-light)}
@@ -142,8 +144,8 @@ td.media{font-family:"DM Serif Display",serif;font-size:1.15rem;color:var(--acce
     <button class="btn active" data-f="todas">Todas</button>
     <button class="btn" data-f="pendentes">Não avaliadas</button>
     <button class="btn" data-f="avaliadas">Avaliadas</button>
-    <button class="btn" id="modo">👥 Ver avaliações de todos</button>
-    <button class="btn blue" id="csv">⬇ CSV</button>
+    <button class="btn" id="modo" hidden>👥 Ver avaliações de todos</button>
+    <button class="btn blue" id="csv" hidden>⬇ CSV</button>
     <span class="qtd" id="qtd"></span>
   </div>
 </div>
@@ -201,7 +203,19 @@ let busca = "", fMaster = "*", fTipo = "", fAval = "todas", verTodos = false, or
 /* ---------- quem sou eu (sem senha) ---------- */
 function lerEu() { try { return JSON.parse(localStorage.getItem("avaliacao-fitas-eu")); } catch { return null; } }
 function gravarEu(v) { try { localStorage.setItem("avaliacao-fitas-eu", JSON.stringify(v)); } catch {} }
+// "Ver avaliações de todos" e o CSV são só do Fred (quem organiza)
+const ehFred = () => !!eu && eu.id === "fred";
+function aplicarPermissoes() {
+  $("#modo").hidden = !ehFred();
+  $("#csv").hidden = !ehFred();
+  if (!ehFred() && verTodos) {
+    verTodos = false;
+    $("#modo").classList.remove("active");
+    $("#modo").textContent = "👥 Ver avaliações de todos";
+  }
+}
 function mostrarQuem() {
+  aplicarPermissoes();
   $("#quem").innerHTML = eu ? `Avaliando como <strong>${esc(eu.nome)}</strong><button id="trocar">trocar de pessoa</button>` : "";
   $("#trocar")?.addEventListener("click", abrirLogin);
 }
@@ -387,6 +401,7 @@ document.querySelectorAll("[data-f]").forEach((b) => b.addEventListener("click",
   desenhar();
 }));
 $("#modo").addEventListener("click", () => {
+  if (!ehFred()) return;
   verTodos = !verTodos;
   $("#modo").classList.toggle("active", verTodos);
   $("#modo").textContent = verTodos ? "✏️ Voltar a avaliar" : "👥 Ver avaliações de todos";
@@ -401,6 +416,7 @@ $("#cab").addEventListener("click", (e) => {
   desenhar();
 });
 $("#csv").addEventListener("click", () => {
+  if (!ehFred()) return;
   const pessoas = Object.entries(todos).filter(([, v]) => v?.nome);
   const q = (s) => `"${String(s ?? "").replace(/"/g, '""')}"`;
   const linhas = [["#", "Nome na fita", "Tipo", "Subtipo", "Local", "Master", "Duração", "Obs planilha", "Média",
@@ -418,19 +434,22 @@ $("#csv").addEventListener("click", () => {
 
 /* ---------- início ---------- */
 eu = lerEu(); mostrarQuem();
+let primeiraCarga = true, recebeuNotas = false;
 onValue(ref(db, RAIZ), (snap) => {
-  todos = snap.val() || {};
+  todos = snap.val() || {}; recebeuNotas = true;
   $("#sync").textContent = "✓ Sincronizado";
   if (!$("#login").hidden) renderNomes();
   if (!fitas.length) return;
-  // não redesenha enquanto a pessoa digita (evita perder o cursor)
-  if (verTodos || !corpo.contains(document.activeElement)) desenhar(); else progresso();
+  // Avaliando: as próprias notas já estão na tela, só redesenha na 1ª carga.
+  // Vendo todos (Fred): redesenha pra mostrar as notas dos outros ao vivo.
+  if (primeiraCarga || verTodos) { primeiraCarga = false; desenhar(); } else progresso();
 }, () => { $("#sync").textContent = "⚠ Sem conexão"; });
 
 fitas = await carregarFitas();
 [...new Set(fitas.map((f) => f.tipo).filter(Boolean))].sort(comparaTxt)
   .forEach((t) => $("#f-tipo").insertAdjacentHTML("beforeend", `<option value="${esc(t)}">${esc(t)}</option>`));
 desenhar();
+if (recebeuNotas) primeiraCarga = false;
 if (!eu) setTimeout(abrirLogin, 400);   // espera os nomes já cadastrados chegarem
 </script>
 </body>
