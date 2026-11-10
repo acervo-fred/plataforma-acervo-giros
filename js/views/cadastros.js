@@ -554,112 +554,51 @@ export async function abrirNovoHistorico({ projetoIdFixo = null, responsavelFixo
 }
 
 /* ---------------- Fita (criar / editar) ---------------- */
+// campos iguais às colunas da planilha de levantamento; local/tipo/subtipo
+// sugerem os valores já usados (datalist), mas aceitam qualquer texto
 export async function abrirNovaFita(existente = null) {
-  const [listas, projetos] = await Promise.all([store.getListas(), store.listProjetos()]);
-  projetos.sort((a, b) => compararNomes(a.nome, b.nome));
+  const fitas = await store.listFitas();
   const ed = !!existente;
   const f = existente || {};
-  const tipos = listas.tipoFita || ["Betacam 30", "Betacam 60", "Mini DV"];
-  const statuses = listas.statusFita || [{ valor: "Não catalogada", cor: "gray" }];
-  const locais = listas.locaisFita || [];
+  const unicos = (k) => [...new Set(fitas.map((x) => x[k]).filter(Boolean))].sort(compararNomes);
+  const lista = (id, k) => `<datalist id="${id}">${unicos(k).map((v) => `<option value="${esc(v)}">`).join("")}</datalist>`;
+  const comLista = (html, id) => html.replace("<input ", `<input list="${id}" autocomplete="off" `);
+  const masterOpcoes = [
+    { valor: "", label: "— (em branco)" }, { valor: "s", label: "Master" },
+    { valor: "n/s", label: "Talvez" }, { valor: "n", label: "Não" },
+  ];
 
   openModal({
     title: ed ? "Editar fita" : "Nova fita",
     submitLabel: ed ? "Salvar alterações" : "Cadastrar fita",
     bodyHtml: `
-      ${fieldText("codigo", "Código / etiqueta", { required: true, value: f.codigo || "", placeholder: "Ex.: BETA-001" })}
+      ${fieldText("nome", "Nome na fita", { required: true, value: f.nome || "" })}
       <div class="field-2col">
-        ${fieldSelect("tipo", "Tipo", tipos, { value: f.tipo || tipos[0] })}
-        ${fieldSelect("statusFita", "Status", statuses, { value: f.statusFita || statuses[0]?.valor || statuses[0] })}
+        ${comLista(fieldText("tipo", "Tipo", { value: f.tipo || "", placeholder: "Ex.: Betacam" }), "dl-tipo")}
+        ${comLista(fieldText("subtipo", "Subtipo", { value: f.subtipo || "", placeholder: "Ex.: 30" }), "dl-sub")}
       </div>
       <div class="field-2col">
-        ${fieldSelect("localFisico", "Local físico", ["", ...locais], { value: f.localFisico || "" })}
-        <div class="field">
-          <label for="f_projetoId">Projeto vinculado</label>
-          <select id="f_projetoId" name="projetoId">
-            <option value="">— Nenhum / não identificado —</option>
-            ${projetos.map((p) => `<option value="${esc(p.id)}" ${p.id === f.projetoId ? "selected" : ""}>${esc(p.nome)} (${formatAno(p.ano)})</option>`).join("")}
-          </select>
-        </div>
+        ${comLista(fieldText("local", "Local", { value: f.local || "", placeholder: "Ex.: Armario 6 Prateleira 3" }), "dl-local")}
+        <div class="field"><label for="f_master">Master</label>
+          <select id="f_master" name="master">
+            ${masterOpcoes.map((o) => `<option value="${o.valor}" ${o.valor === (f.master || "") ? "selected" : ""}>${o.label}</option>`).join("")}
+          </select></div>
       </div>
-      ${fieldText("projetoNome", "Nome do projeto (se não cadastrado)", { value: f.projetoNome || "", placeholder: "Ex.: Documentário XYZ" })}
-      ${fieldTextarea("observacoes", "Observações", { value: f.observacoes || "", placeholder: "Conteúdo, estado da fita, anotações…" })}
+      ${fieldText("duracao", "Duração", { value: f.duracao || "", placeholder: "Ex.: 51'44\"" })}
+      ${fieldTextarea("obs", "Obs", { value: f.obs || "" })}
+      ${lista("dl-tipo", "tipo")}${lista("dl-sub", "subtipo")}${lista("dl-local", "local")}
     `,
     onSubmit: async (form) => {
-      const codigo = readValue(form, "codigo");
-      if (!codigo) throw new Error("Informe o código da fita.");
+      const nome = readValue(form, "nome");
+      if (!nome) throw new Error("Informe o nome na fita.");
       const campos = {
-        codigo,
-        tipo: readValue(form, "tipo"),
-        statusFita: readValue(form, "statusFita"),
-        localFisico: readValue(form, "localFisico"),
-        projetoId: readValue(form, "projetoId"),
-        projetoNome: readValue(form, "projetoNome"),
-        observacoes: readValue(form, "observacoes"),
+        nome,
+        tipo: readValue(form, "tipo"), subtipo: readValue(form, "subtipo"),
+        local: readValue(form, "local"), master: readValue(form, "master"),
+        duracao: readValue(form, "duracao"), obs: readValue(form, "obs"),
       };
       if (ed) await store.updateFita(f.id, campos);
       else await store.addFita(campos);
-      avisarMudanca();
-    },
-  });
-}
-
-/* ---------------- Fitas em lote ---------------- */
-export async function abrirLoteFitas() {
-  const [listas, projetos] = await Promise.all([store.getListas(), store.listProjetos()]);
-  projetos.sort((a, b) => compararNomes(a.nome, b.nome));
-  const tipos = listas.tipoFita || ["Betacam 30", "Betacam 60", "Mini DV"];
-  const statuses = listas.statusFita || [{ valor: "Não catalogada", cor: "gray" }];
-  const locais = listas.locaisFita || [];
-
-  openModal({
-    title: "Cadastro em lote",
-    submitLabel: "Cadastrar fitas",
-    bodyHtml: `
-      <div class="field-hint" style="margin-bottom:14px">Informe o prefixo e o intervalo numérico. Ex.: prefixo <strong>BETA30-</strong>, de <strong>1</strong> a <strong>50</strong> gera BETA30-001 até BETA30-050.</div>
-      ${fieldText("prefixo", "Prefixo do código", { required: true, placeholder: "Ex.: BETA30-" })}
-      <div class="field-2col">
-        ${fieldText("de", "De (número)", { type: "number", required: true, value: "1" })}
-        ${fieldText("ate", "Até (número)", { type: "number", required: true, placeholder: "Ex.: 50" })}
-      </div>
-      <div class="field-2col">
-        ${fieldSelect("tipo", "Tipo", tipos, { value: tipos[0] })}
-        ${fieldSelect("statusFita", "Status", statuses, { value: statuses[0]?.valor || statuses[0] })}
-      </div>
-      <div class="field-2col">
-        ${fieldSelect("localFisico", "Local físico", ["", ...locais], { value: "" })}
-        <div class="field">
-          <label for="f_projetoId">Projeto vinculado</label>
-          <select id="f_projetoId" name="projetoId">
-            <option value="">— Nenhum / não identificado —</option>
-            ${projetos.map((p) => `<option value="${esc(p.id)}">${esc(p.nome)} (${formatAno(p.ano)})</option>`).join("")}
-          </select>
-        </div>
-      </div>
-      ${fieldText("projetoNome", "Nome do projeto (se não cadastrado)", { placeholder: "Ex.: Documentário XYZ" })}
-      ${fieldTextarea("observacoes", "Observações", { placeholder: "Conteúdo, estado das fitas, anotações…" })}
-    `,
-    onSubmit: async (form) => {
-      const prefixo = readValue(form, "prefixo");
-      if (!prefixo) throw new Error("Informe o prefixo.");
-      const de = parseInt(readValue(form, "de"), 10);
-      const ate = parseInt(readValue(form, "ate"), 10);
-      if (isNaN(de) || isNaN(ate) || ate < de) throw new Error("Intervalo inválido.");
-      if (ate - de + 1 > 500) throw new Error("Máximo de 500 fitas por lote.");
-      const tipo = readValue(form, "tipo");
-      const statusFita = readValue(form, "statusFita");
-      const localFisico = readValue(form, "localFisico");
-      const projetoId = readValue(form, "projetoId");
-      const projetoNome = readValue(form, "projetoNome");
-      const observacoes = readValue(form, "observacoes");
-      const pad = String(ate).length;
-      for (let i = de; i <= ate; i++) {
-        await store.addFita({
-          codigo: prefixo + String(i).padStart(pad, "0"),
-          tipo, statusFita, localFisico,
-          projetoId, projetoNome, observacoes,
-        });
-      }
       avisarMudanca();
     },
   });

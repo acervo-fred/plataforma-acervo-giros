@@ -1,6 +1,6 @@
 /* Detalhe do Projeto — banner com nome/formato/status, linha de KPIs,
    e duas colunas: Mídias vinculadas + Links do projeto (principal) e
-   Histórico + Demandas abertas (lateral). Fitas fica abaixo, inteira.
+   Histórico + Demandas abertas (lateral).
    Inclui editar/excluir do projeto e de cada item das listas. */
 
 import { store } from "../data/store.js";
@@ -25,12 +25,11 @@ export async function renderProjeto(app, id, aba = "") {
     return;
   }
 
-  const [listas, midias, historico, demandasBrutas, fitas] = await Promise.all([
+  const [listas, midias, historico, demandasBrutas] = await Promise.all([
     store.getListas(),
     store.midiasDoProjeto(id),
     store.historicoDoProjeto(id),
     store.demandasDoProjeto(id),
-    store.fitasDoProjeto(id),
   ]);
   const demandas = ordenarDemandas(demandasBrutas, listas.prioridade);
   const abertas = demandas.filter((d) => !STATUS_FECHADOS.includes(d.status));
@@ -125,14 +124,6 @@ export async function renderProjeto(app, id, aba = "") {
       </div>
     </div>
 
-    <!-- FITAS -->
-    <section class="section">
-      <div class="section-head"><h2>Fitas <span class="section-hint">fitas vinculadas a este projeto</span></h2></div>
-      <div class="list-card">
-        ${fitas.length ? fitas.map((f) => fitaRow(f, listas)).join("")
-          : `<div class="empty">Nenhuma fita vinculada a este projeto.</div>`}
-      </div>
-    </section>
     `}
   `;
 
@@ -359,15 +350,5 @@ function demandaRow(d, listas) {
     ${badgeFromLista(listas.prioridade, d.prioridade)}
     ${badgeFromLista(listas.statusDemanda, d.status)}
     ${acoesRow("d", d.id)}
-  </div>`;
-}
-
-function fitaRow(f, listas) {
-  return `<div class="list-row">
-    <div class="lr-main">
-      <div class="lr-title">📼 ${esc(f.codigo)} <span class="muted" style="font-weight:400">· ${esc(f.tipo)}</span></div>
-      <div class="lr-sub">${esc(f.localFisico || "")}${f.observacoes ? ` · ${esc(f.observacoes)}` : ""}</div>
-    </div>
-    ${badgeFromLista(listas.statusFita || [], f.statusFita)}
   </div>`;
 }

@@ -72,24 +72,6 @@ if (!db.listas.statusFita) db.listas.statusFita = [
 ];
 if (!db.listas.locaisFita) db.listas.locaisFita = ["Estante A", "Estante B", "Caixa 1", "Caixa 2"];
 
-if (db.fitas.length === 0) {
-  const _st = ["Não catalogada","Catalogada","Aguardando digitalização","Em digitalização","Digitalizada"];
-  const _loc = db.listas.locaisFita;
-  for (let i = 1; i <= 10; i++) {
-    const s = i <= 2 ? "Digitalizada" : i <= 4 ? "Em digitalização" : i <= 5 ? "Aguardando digitalização" : _st[Math.floor(Math.random()*2)];
-    db.fitas.push({ id:`ft_b30_${i}`, codigo:`BETA30-${String(i).padStart(3,"0")}`, tipo:"Betacam 30", localFisico:_loc[i%_loc.length], projetoNome:"", projetoId:"", statusFita:s, observacoes:"", dataCadastro:"2026-06-25" });
-  }
-  for (let i = 1; i <= 10; i++) {
-    const s = i <= 1 ? "Digitalizada" : i <= 3 ? "Em digitalização" : i <= 4 ? "Aguardando digitalização" : _st[Math.floor(Math.random()*2)];
-    db.fitas.push({ id:`ft_b60_${i}`, codigo:`BETA60-${String(i).padStart(3,"0")}`, tipo:"Betacam 60", localFisico:_loc[i%_loc.length], projetoNome:"", projetoId:"", statusFita:s, observacoes:"", dataCadastro:"2026-06-25" });
-  }
-  for (let i = 1; i <= 10; i++) {
-    const s = i <= 1 ? "Digitalizada" : i <= 2 ? "Aguardando digitalização" : _st[Math.floor(Math.random()*2)];
-    db.fitas.push({ id:`ft_mdv_${i}`, codigo:`MDV-${String(i).padStart(3,"0")}`, tipo:"Mini DV", localFisico:_loc[i%_loc.length], projetoNome:"", projetoId:"", statusFita:s, observacoes:"", dataCadastro:"2026-06-25" });
-  }
-  persistir();
-}
-
 /* grava o estado atual no localStorage (chamado após cada escrita) */
 function persistir() {
   try {
@@ -425,16 +407,10 @@ const mockStore = {
     return structuredClone(novo);
   },
   async addFita(dados) {
+    const t = (v) => String(v ?? "").trim();
     const novo = {
-      id: novoId("ft"),
-      codigo: dados.codigo,
-      tipo: dados.tipo,
-      localFisico: dados.localFisico || "",
-      projetoNome: dados.projetoNome || "",
-      projetoId: dados.projetoId || "",
-      statusFita: dados.statusFita,
-      observacoes: dados.observacoes || "",
-      dataCadastro: dados.dataCadastro || new Date().toISOString().slice(0, 10),
+      id: novoId("ft"), local: t(dados.local), tipo: t(dados.tipo), subtipo: t(dados.subtipo),
+      master: t(dados.master), nome: t(dados.nome), duracao: t(dados.duracao), obs: t(dados.obs),
     };
     db.fitas.push(novo);
     persistir();

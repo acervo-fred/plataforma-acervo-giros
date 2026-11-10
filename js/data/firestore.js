@@ -9,7 +9,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs, getDocsFromServer,
-  addDoc, setDoc, updateDoc, deleteDoc, query, where, FieldPath,
+  addDoc, setDoc, updateDoc, deleteDoc, query, where, FieldPath, runTransaction,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import { firebaseConfig, COLLECTIONS } from "../config/firebase-config.js";
@@ -38,6 +38,27 @@ function ultimaAtualizacao(projetoId, historico) {
 }
 function nomeProjetoOuGeral(projetoId, nomePorId) {
   return projetoId ? (nomePorId[projetoId] || "—") : "Geral";
+}
+
+/* ---------- fitas em blocos ---------- */
+const FITAS_POR_BLOCO = 400;
+const MASTER_VALORES = ["s", "n/s", "n", ""];
+function camposFita(d) {
+  const t = (v) => String(v ?? "").trim();
+  return {
+    local: t(d.local), tipo: t(d.tipo), subtipo: t(d.subtipo),
+    master: MASTER_VALORES.includes(t(d.master)) ? t(d.master) : "",
+    nome: t(d.nome), duracao: t(d.duracao), obs: t(d.obs),
+  };
+}
+async function mexerNoBloco(id, fn) {
+  const bloco = String(id).split(":")[0];
+  await runTransaction(fdb, async (tx) => {
+    const ref = doc(fdb, COLLECTIONS.fitas, bloco);
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error("Bloco de fitas não encontrado.");
+    tx.update(ref, { itens: fn(snap.data().itens || []) });
+  });
 }
 
 export const firestoreStore = {
@@ -261,12 +282,19 @@ export const firestoreStore = {
   },
 
   /* FITAS */
-  async listFitas() { return allDocs(COLLECTIONS.fitas); },
-  async getFita(id) {
-    const snap = await getDoc(doc(fdb, COLLECTIONS.fitas, id));
-    return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+  // Fitas ficam em BLOCOS (docs "b00", "b01"… com itens: [...]) pra
+  // economizar leitura: ~1.700 fitas = 5 leituras em vez de 1.700.
+  // id da fita = "<bloco>:<sufixo>" → editar lê/grava só aquele bloco.
+  async listFitas() {
+    const blocos = (await allDocs(COLLECTIONS.fitas)).filter((b) => Array.isArray(b.itens));
+    blocos.sort((a, b) => a.id.localeCompare(b.id));
+    return blocos.flatMap((b) => b.itens);
   },
-  async fitasDoProjeto(projetoId) { return docsWhere(COLLECTIONS.fitas, "projetoId", projetoId); },
+  async getFita(id) { return (await this.listFitas()).find((f) => f.id === id) || null; },
+  async fitasDoProjeto(projetoId) {
+    if (!projetoId) return [];
+    return (await this.listFitas()).filter((f) => f.projetoId === projetoId);
+  },
 
   /* ---------- ESCRITA ---------- */
   async addProjeto(d) {
@@ -312,13 +340,20 @@ export const firestoreStore = {
     return { id: ref.id, ...d };
   },
   async addFita(d) {
-    const ref = await addDoc(collection(fdb, COLLECTIONS.fitas), {
-      codigo: d.codigo, tipo: d.tipo, localFisico: d.localFisico || "",
-      projetoNome: d.projetoNome || "", projetoId: d.projetoId || "",
-      statusFita: d.statusFita, observacoes: d.observacoes || "",
-      dataCadastro: d.dataCadastro || new Date().toISOString().slice(0, 10),
+    const blocos = (await allDocs(COLLECTIONS.fitas)).filter((b) => Array.isArray(b.itens))
+      .sort((a, b) => a.id.localeCompare(b.id));
+    let alvo = blocos[blocos.length - 1];
+    if (!alvo || alvo.itens.length >= FITAS_POR_BLOCO) {
+      alvo = { id: "b" + String(blocos.length).padStart(2, "0"), itens: [] };
+    }
+    const nova = { ...camposFita(d), id: alvo.id + ":" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) };
+    await runTransaction(fdb, async (tx) => {
+      const ref = doc(fdb, COLLECTIONS.fitas, alvo.id);
+      const snap = await tx.get(ref);
+      const itens = snap.exists() ? (snap.data().itens || []) : [];
+      tx.set(ref, { itens: [...itens, nova] });
     });
-    return { id: ref.id, ...d };
+    return nova;
   },
 
   /* ---------- EDIÇÃO ---------- */
@@ -326,7 +361,10 @@ export const firestoreStore = {
   async updateMidia(id, campos) { await updateDoc(doc(fdb, COLLECTIONS.midias, id), campos); return { id, ...campos }; },
   async updateEstrutura(id, campos) { await updateDoc(doc(fdb, COLLECTIONS.estrutura, id), campos); return { id, ...campos }; },
   async updateHistorico(id, campos) { await updateDoc(doc(fdb, COLLECTIONS.historico, id), campos); return { id, ...campos }; },
-  async updateFita(id, campos) { await updateDoc(doc(fdb, COLLECTIONS.fitas, id), campos); return { id, ...campos }; },
+  async updateFita(id, campos) {
+    await mexerNoBloco(id, (itens) => itens.map((f) => (f.id === id ? { ...f, ...camposFita({ ...f, ...campos }), id } : f)));
+    return { id, ...campos };
+  },
   async updateDemanda(id, campos) { await updateDoc(doc(fdb, COLLECTIONS.demandas, id), campos); return { id, ...campos }; },
 
   /* ---------- EXCLUSÃO ---------- */
@@ -351,7 +389,7 @@ export const firestoreStore = {
   async removeMidia(id) { await deleteDoc(doc(fdb, COLLECTIONS.midias, id)); return true; },
   async removeEstrutura(id) { await deleteDoc(doc(fdb, COLLECTIONS.estrutura, id)); return true; },
   async removeHistorico(id) { await deleteDoc(doc(fdb, COLLECTIONS.historico, id)); return true; },
-  async removeFita(id) { await deleteDoc(doc(fdb, COLLECTIONS.fitas, id)); return true; },
+  async removeFita(id) { await mexerNoBloco(id, (itens) => itens.filter((f) => f.id !== id)); return true; },
   async removeDemanda(id) { await deleteDoc(doc(fdb, COLLECTIONS.demandas, id)); return true; },
 
   /* ---------- BACKUP ---------- */

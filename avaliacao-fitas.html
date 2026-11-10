@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Avaliação das Fitas — Giros</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f2f7f4; --surface:#fff; --surface2:#eaf2ec; --border:#c4dbc8;
+  --accent:#2e7d52; --accent-light:#e6f4ec; --blue:#1565c0; --blue-light:#e3eeff;
+  --text:#182818; --soft:#3a543a; --muted:#6b8f72;
+  --low:#c62828; --mid:#e65100; --high:#2e7d52; --amber:#b7791f;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"DM Sans",system-ui,sans-serif;min-height:100vh;padding-bottom:70px}
+button,input,select,textarea{font:inherit}
+
+.capa{background:#0d1f0d;padding:24px 40px;display:flex;align-items:center;gap:28px;border-bottom:3px solid var(--accent)}
+.capa img{height:64px;width:auto;display:block}
+.capa-div{width:2px;height:58px;background:#2a4a2a}
+.capa-titulo{font-family:"DM Serif Display",serif;font-size:clamp(1.5rem,3.2vw,2.2rem);color:#e8f5ec;line-height:1.1}
+.capa-sub{font-size:.76rem;color:#6a9a6a;letter-spacing:.14em;text-transform:uppercase;margin-top:4px}
+.capa-sp{flex:1}
+.quem{color:#cfe8d6;font-size:.85rem;text-align:right}
+.quem strong{color:#fff;font-size:1rem;display:block}
+.quem button{background:none;border:0;color:#7fc49b;text-decoration:underline;cursor:pointer;font-size:.78rem;padding:0;margin-top:2px}
+
+.intro{max-width:1300px;margin:0 auto;padding:22px 40px 0;color:var(--soft);font-size:.86rem;line-height:1.6}
+.intro b{color:var(--text)}
+
+.lista-header{background:var(--surface);border-bottom:2px solid var(--border);padding:14px 40px 12px;position:sticky;top:0;z-index:20;box-shadow:0 2px 10px rgba(46,125,82,.07);margin-top:18px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;max-width:1300px;margin:0 auto}
+.controls input[type=search]{flex:1;min-width:200px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:.84rem;padding:8px 13px;border-radius:7px;outline:none}
+.controls input[type=search]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(46,125,82,.12)}
+.controls select{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:.8rem;color:var(--soft)}
+.btn{background:var(--surface);border:1px solid var(--border);color:var(--muted);font-size:.78rem;font-weight:500;padding:7px 13px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+.btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.blue{border-color:var(--blue);color:var(--blue)}
+.btn.blue:hover{background:var(--blue-light)}
+.qtd{font-size:.78rem;color:var(--muted);margin-left:auto}
+
+.wrap{max-width:1300px;margin:0 auto;overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead th{padding:0;text-align:left;font-size:.64rem;text-transform:uppercase;letter-spacing:.11em;color:var(--muted);border-bottom:1px solid var(--border);font-weight:600;background:var(--surface2);white-space:nowrap}
+thead th > span, .th-sort{display:block;padding:9px 12px}
+.th-sort{all:unset;box-sizing:border-box;display:block;width:100%;padding:9px 12px;cursor:pointer}
+.th-sort:hover,.th-sort.on{color:var(--text)}
+tbody tr{border-bottom:1px solid var(--border)}
+tbody tr:hover{background:#eaf5ee}
+tbody tr.avaliada{background:var(--accent-light)}
+td{padding:8px 12px;vertical-align:middle;font-size:.82rem}
+td.num{color:var(--muted);font-size:.7rem;text-align:right;width:44px}
+td.nome{font-weight:600;min-width:220px}
+td.nome .meta{display:block;font-weight:400;color:var(--muted);font-size:.72rem;margin-top:2px}
+td.nome .pobs{display:block;font-weight:400;color:var(--soft);font-size:.72rem;margin-top:2px;font-style:italic}
+td.dur{white-space:nowrap;color:var(--soft);font-size:.78rem}
+.mst{display:inline-block;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.mst.s{background:#dff1e6;color:var(--accent)}
+.mst.ns{background:#fdf0dc;color:var(--amber)}
+.mst.n{background:#eee;color:#888}
+
+.dots{display:flex;gap:4px;align-items:center}
+.dots .nota{font-family:"DM Serif Display",serif;font-size:1.05rem;color:var(--muted);width:22px;text-align:right;margin-right:4px}
+.dots .nota.tem{color:var(--accent)}
+.dots button{width:21px;height:21px;border-radius:50%;border:2px solid var(--border);background:transparent;cursor:pointer;font-size:.6rem;font-weight:700;color:transparent;display:flex;align-items:center;justify-content:center;padding:0;transition:transform .1s}
+.dots button:hover{transform:scale(1.25);border-color:var(--accent);color:var(--muted)}
+.dots button.on{border-color:transparent;color:#fff}
+.dots button.on.low{background:var(--low)} .dots button.on.mid{background:var(--mid)} .dots button.on.high{background:var(--high)}
+td.obs{width:250px;min-width:200px}
+.obs-in{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 9px;font-size:.78rem;color:var(--text);resize:vertical;min-height:32px;outline:none}
+.obs-in:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(46,125,82,.1)}
+.obs-in.salvo{border-color:var(--accent);background:var(--accent-light)}
+
+/* modo "ver todos" */
+td.todos{min-width:260px}
+.av{display:flex;gap:8px;align-items:baseline;font-size:.78rem;margin:2px 0}
+.av b{min-width:22px;text-align:right;font-family:"DM Serif Display",serif;font-size:1rem}
+.av b.low{color:var(--low)} .av b.mid{color:var(--mid)} .av b.high{color:var(--high)}
+.av span{color:var(--muted)} .av em{color:var(--soft)}
+td.media{font-family:"DM Serif Display",serif;font-size:1.15rem;color:var(--accent);text-align:center;width:70px}
+
+.vazio{padding:40px;text-align:center;color:var(--muted)}
+.bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:2px solid var(--border);padding:10px 40px;display:flex;align-items:center;gap:14px;box-shadow:0 -2px 10px rgba(46,125,82,.07);z-index:20}
+.pw{flex:1;height:7px;background:var(--border);border-radius:99px;overflow:hidden}
+.pf{height:100%;background:var(--accent);width:0;transition:width .4s}
+.pt{font-size:.76rem;color:var(--muted);white-space:nowrap}
+.pt span{color:var(--accent);font-weight:600}
+#sync{font-size:.72rem;color:var(--muted);white-space:nowrap}
+
+/* entrada (login sem senha) */
+.login-bg[hidden]{display:none}
+.login-bg{position:fixed;inset:0;background:rgba(13,31,13,.72);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.login{background:var(--surface);border-radius:14px;padding:26px;max-width:420px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.login h2{font-family:"DM Serif Display",serif;font-weight:400;font-size:1.5rem;color:var(--accent);margin-bottom:6px}
+.login p{font-size:.84rem;color:var(--soft);line-height:1.55;margin-bottom:14px}
+.login .nomes{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.login form{display:flex;gap:8px}
+.login input{flex:1;border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:.9rem;outline:none}
+.login input:focus{border-color:var(--accent)}
+.login .ok{background:var(--accent);color:#fff;border:0;border-radius:7px;padding:9px 16px;font-weight:600;cursor:pointer}
+
+@media(max-width:700px){
+  .capa{padding:18px 16px;gap:14px} .capa img{height:42px} .capa-div{display:none}
+  .intro,.lista-header,.bar{padding-left:16px;padding-right:16px}
+  td,thead th>span,.th-sort{padding-left:8px;padding-right:8px}
+  .dots button{width:17px;height:17px}
+}
+</style>
+</head>
+<body>
+<div class="capa">
+  <img src="GIROSFILMES_NEGATIVO.png" alt="Giros Filmes">
+  <div class="capa-div"></div>
+  <div>
+    <div class="capa-titulo">Avaliação das Fitas</div>
+    <div class="capa-sub">Prioridade de digitalização</div>
+  </div>
+  <div class="capa-sp"></div>
+  <div class="quem" id="quem"></div>
+</div>
+
+<div class="intro">
+  Dê uma nota de <b>1 a 10</b> para cada fita: quanto maior, mais urgente digitalizar. Deixe em branco o que não precisa.
+  Use o campo ao lado para suas observações. Tudo é salvo sozinho e fica separado por pessoa.
+  <b>Master</b> = é a master de algum programa · <b>Talvez</b> = pode ser master · <b>Não</b> = não é master.
+</div>
+
+<div class="lista-header">
+  <div class="controls">
+    <input type="search" id="busca" placeholder="🔍  Buscar nome, tipo, local…">
+    <select id="f-master">
+      <option value="*">Master: todas</option>
+      <option value="s">Só Master</option>
+      <option value="n/s">Só Talvez</option>
+      <option value="n">Só Não</option>
+      <option value="">Sem marcação</option>
+    </select>
+    <select id="f-tipo"><option value="">Todos os tipos</option></select>
+    <button class="btn active" data-f="todas">Todas</button>
+    <button class="btn" data-f="pendentes">Não avaliadas</button>
+    <button class="btn" data-f="avaliadas">Avaliadas</button>
+    <button class="btn" id="modo">👥 Ver avaliações de todos</button>
+    <button class="btn blue" id="csv">⬇ CSV</button>
+    <span class="qtd" id="qtd"></span>
+  </div>
+</div>
+
+<div class="wrap">
+  <table>
+    <thead id="cab"></thead>
+    <tbody id="corpo"><tr><td class="vazio" colspan="9">Carregando fitas…</td></tr></tbody>
+  </table>
+</div>
+
+<div class="bar">
+  <div class="pt">Avaliadas por você: <span id="pt">0</span></div>
+  <div class="pw"><div class="pf" id="pf"></div></div>
+  <div id="sync">⏳ Conectando…</div>
+</div>
+
+<div class="login-bg" id="login" hidden>
+  <div class="login">
+    <h2>Quem está avaliando?</h2>
+    <p>Não precisa de senha. O nome só serve para separar a avaliação de cada pessoa. Escolha o seu nome ou escreva um novo.</p>
+    <div class="nomes" id="nomes"></div>
+    <form id="login-form">
+      <input id="login-nome" placeholder="Seu nome" autocomplete="name" maxlength="40">
+      <button class="ok" type="submit">Entrar</button>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const API_KEY = "AIzaSyC-0iuPs5xhvjjh2LmzoGjAKtAh6aY2-ZQ";
+const app = initializeApp({
+  apiKey: API_KEY, authDomain: "giros-imagens.firebaseapp.com",
+  databaseURL: "https://giros-imagens-default-rtdb.firebaseio.com", projectId: "giros-imagens",
+});
+const db = getDatabase(app);
+const RAIZ = "acervo/fitas_avaliacao";   // {avaliadorId: {nome, notas: {fitaKey: {p, obs, ts}}}}
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const chave = (id) => id.replace(/[.#$\[\]\/:]/g, "_");
+const slug = (n) => n.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "anonimo";
+const MASTER = { s: ["Master", "s"], "n/s": ["Talvez", "ns"], n: ["Não", "n"] };
+const MASTER_ORD = { s: 0, "n/s": 1, n: 2 };
+const cls = (v) => (v <= 3 ? "low" : v <= 6 ? "mid" : "high");
+const comparaTxt = (a, b) => a.localeCompare(b, "pt", { numeric: true, sensitivity: "base" });
+const semPont = (v) => String(v).replace(/^[^\p{L}\p{N}]+/u, "");
+
+let fitas = [], todos = {}, eu = null;
+let busca = "", fMaster = "*", fTipo = "", fAval = "todas", verTodos = false, ordem = { k: "", dir: 1 };
+
+/* ---------- quem sou eu (sem senha) ---------- */
+function lerEu() { try { return JSON.parse(localStorage.getItem("avaliacao-fitas-eu")); } catch { return null; } }
+function gravarEu(v) { try { localStorage.setItem("avaliacao-fitas-eu", JSON.stringify(v)); } catch {} }
+function mostrarQuem() {
+  $("#quem").innerHTML = eu ? `Avaliando como <strong>${esc(eu.nome)}</strong><button id="trocar">trocar de pessoa</button>` : "";
+  $("#trocar")?.addEventListener("click", abrirLogin);
+}
+function renderNomes() {
+  const lista = Object.entries(todos).filter(([, v]) => v && v.nome);
+  $("#nomes").innerHTML = lista.map(([id, v]) => `<button class="btn" data-id="${esc(id)}">${esc(v.nome)}</button>`).join("");
+}
+function abrirLogin() {
+  renderNomes();
+  $("#login").hidden = false;
+  setTimeout(() => $("#login-nome").focus(), 50);
+}
+function entrar(id, nome) {
+  eu = { id, nome }; gravarEu(eu);
+  if (!todos[id]) set(ref(db, `${RAIZ}/${id}/nome`), nome);
+  $("#login").hidden = true; mostrarQuem(); desenhar();
+}
+$("#nomes").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-id]"); if (!b) return;
+  entrar(b.dataset.id, todos[b.dataset.id].nome);
+});
+$("#login-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const nome = $("#login-nome").value.trim(); if (!nome) return;
+  entrar(slug(nome), nome);
+});
+
+/* ---------- dados ---------- */
+async function carregarFitas() {
+  const url = `https://firestore.googleapis.com/v1/projects/giros-imagens/databases/(default)/documents/acervo_fitas?pageSize=50&key=${API_KEY}`;
+  const docs = (await (await fetch(url)).json()).documents || [];
+  docs.sort((a, b) => a.name.localeCompare(b.name));
+  const val = (v) => v.stringValue ?? "";
+  return docs.flatMap((d) => (d.fields?.itens?.arrayValue?.values || []).map((v) => {
+    const f = v.mapValue.fields, o = {};
+    for (const k in f) o[k] = val(f[k]);
+    return o;
+  })).map((f, i) => ({ ...f, n: i + 1, k: chave(f.id) }));
+}
+const minha = (f) => (eu && todos[eu.id]?.notas?.[f.k]) || {};
+function avaliacoes(f) {
+  return Object.entries(todos).map(([id, v]) => ({ id, nome: v.nome, ...(v.notas?.[f.k] || {}) }))
+    .filter((a) => a.p || a.obs);
+}
+function media(f) {
+  const ps = avaliacoes(f).map((a) => a.p).filter(Boolean);
+  return ps.length ? ps.reduce((s, x) => s + x, 0) / ps.length : null;
+}
+
+/* ---------- tabela ---------- */
+function cabecalho() {
+  const th = (k, t) => `<th><button class="th-sort ${ordem.k === k ? "on" : ""}" data-k="${k}">${t}${ordem.k === k ? (ordem.dir > 0 ? " ↑" : " ↓") : ""}</button></th>`;
+  $("#cab").innerHTML = `<tr>
+    ${th("n", "#")}${th("nome", "Fita")}${th("master", "Master")}${th("dur", "Duração")}
+    ${verTodos ? th("media", "Média") + `<th><span>Avaliações</span></th>`
+               : th("p", "Sua prioridade (1–10)") + `<th><span>Sua observação</span></th>`}
+  </tr>`;
+}
+function durSeg(t) {
+  const s = String(t || "").toLowerCase(), n = (s.match(/\d+/g) || []).map(Number);
+  if (!n.length) return null;
+  if (/\d\s*h/.test(s)) { const m = s.match(/(\d+)\s*h\D*(\d+)?\D*(\d+)?/); return (+m[1]) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0); }
+  if (s.includes(":")) return n.length >= 3 && n[0] < 10 ? n[0] * 3600 + n[1] * 60 + n[2] : n[0] * 60 + (n[1] || 0);
+  if (s.includes("'")) return n[0] * 60 + (n[1] || 0);
+  return n[0] * 60;
+}
+function valorOrdem(f, k) {
+  if (k === "n") return f.n;
+  if (k === "nome") return f.nome ? semPont(f.nome) : null;
+  if (k === "master") return f.master ? MASTER_ORD[f.master] : null;
+  if (k === "dur") return durSeg(f.duracao);
+  if (k === "p") return minha(f).p || null;
+  if (k === "media") return media(f);
+  return null;
+}
+function filtradas() {
+  const t = busca.trim().toLowerCase();
+  const arr = fitas.filter((f) => {
+    if (fMaster !== "*" && (f.master || "") !== fMaster) return false;
+    if (fTipo && f.tipo !== fTipo) return false;
+    const temNota = verTodos ? avaliacoes(f).length > 0 : !!(minha(f).p || minha(f).obs);
+    if (fAval === "pendentes" && temNota) return false;
+    if (fAval === "avaliadas" && !temNota) return false;
+    if (t && ![f.nome, f.tipo, f.local, f.obs, f.subtipo].some((v) => (v || "").toLowerCase().includes(t))) return false;
+    return true;
+  });
+  if (ordem.k) arr.sort((a, b) => {
+    const x = valorOrdem(a, ordem.k), y = valorOrdem(b, ordem.k);
+    if (x === null || y === null) return ((x === null) - (y === null)) || a.n - b.n;
+    // prioridade/média: 1º clique já mostra as mais altas
+    const dir = ["p", "media"].includes(ordem.k) ? -ordem.dir : ordem.dir;
+    return ((typeof x === "number" ? x - y : comparaTxt(x, y)) * dir) || a.n - b.n;
+  });
+  return arr;
+}
+function dots(f) {
+  const p = minha(f).p || 0;
+  let h = `<div class="dots" data-k="${f.k}"><span class="nota ${p ? "tem" : ""}">${p || "—"}</span>`;
+  for (let v = 1; v <= 10; v++) h += `<button data-v="${v}" title="Prioridade ${v}" class="${v <= p ? "on " + cls(p) : ""}">${v}</button>`;
+  return h + "</div>";
+}
+function linha(f) {
+  const m = MASTER[f.master];
+  const meta = [f.tipo, f.subtipo, f.local].filter(Boolean).join(" · ");
+  const base = `<td class="num">${f.n}</td>
+    <td class="nome">${esc(f.nome)}<span class="meta">${esc(meta)}</span>${f.obs ? `<span class="pobs">${esc(f.obs)}</span>` : ""}</td>
+    <td>${m ? `<span class="mst ${m[1]}">${m[0]}</span>` : ""}</td>
+    <td class="dur">${esc(f.duracao)}</td>`;
+  if (verTodos) {
+    const av = avaliacoes(f), md = media(f);
+    return `<tr class="${av.length ? "avaliada" : ""}">${base}
+      <td class="media">${md ? md.toFixed(1).replace(".", ",") : ""}</td>
+      <td class="todos">${av.map((a) => `<div class="av"><b class="${a.p ? cls(a.p) : ""}">${a.p || "—"}</b><span>${esc(a.nome)}</span>${a.obs ? `<em>${esc(a.obs)}</em>` : ""}</div>`).join("")}</td></tr>`;
+  }
+  const mi = minha(f);
+  return `<tr class="${mi.p ? "avaliada" : ""}" data-k="${f.k}">${base}
+    <td>${dots(f)}</td>
+    <td class="obs"><textarea class="obs-in" rows="1" data-k="${f.k}" placeholder="Observação…">${esc(mi.obs || "")}</textarea></td></tr>`;
+}
+function desenhar() {
+  cabecalho();
+  const arr = filtradas();
+  $("#corpo").innerHTML = arr.length ? arr.map(linha).join("") : `<tr><td class="vazio" colspan="9">Nenhuma fita encontrada.</td></tr>`;
+  $("#qtd").textContent = `${arr.length} de ${fitas.length} fitas`;
+  progresso();
+}
+function progresso() {
+  const n = eu ? Object.values(todos[eu.id]?.notas || {}).filter((x) => x.p).length : 0;
+  $("#pt").textContent = `${n} de ${fitas.length}`;
+  $("#pf").style.width = (fitas.length ? (n / fitas.length) * 100 : 0) + "%";
+}
+
+/* ---------- gravação ---------- */
+function gravar(k, campos) {
+  if (!eu) return abrirLogin();
+  const atual = todos[eu.id]?.notas?.[k] || {};
+  const novo = { ...atual, ...campos, ts: Date.now() };
+  if (!novo.p) delete novo.p;
+  if (!novo.obs) delete novo.obs;
+  todos[eu.id] = todos[eu.id] || { nome: eu.nome, notas: {} };
+  todos[eu.id].notas = todos[eu.id].notas || {};
+  if (novo.p || novo.obs) todos[eu.id].notas[k] = novo; else delete todos[eu.id].notas[k];
+  return set(ref(db, `${RAIZ}/${eu.id}/notas/${k}`), novo.p || novo.obs ? novo : null);
+}
+const corpo = $("#corpo");
+corpo.addEventListener("click", (e) => {
+  const b = e.target.closest(".dots button"); if (!b) return;
+  const k = b.closest(".dots").dataset.k, v = +b.dataset.v;
+  const atual = minha({ k }).p;
+  gravar(k, { p: atual === v ? 0 : v });   // clicar de novo na mesma nota apaga
+  const f = fitas.find((x) => x.k === k);
+  b.closest(".dots").outerHTML = dots(f);
+  corpo.querySelector(`tr[data-k="${k}"]`)?.classList.toggle("avaliada", !!minha(f).p);
+  progresso();
+});
+corpo.addEventListener("mouseover", (e) => {
+  const b = e.target.closest(".dots button"); if (!b) return;
+  const v = +b.dataset.v;
+  b.parentElement.querySelectorAll("button").forEach((x) => { x.className = +x.dataset.v <= v ? "on " + cls(v) : ""; x.style.opacity = ".6"; });
+});
+corpo.addEventListener("mouseout", (e) => {
+  const d = e.target.closest(".dots"); if (!d || d.contains(e.relatedTarget)) return;
+  d.outerHTML = dots(fitas.find((x) => x.k === d.dataset.k));
+});
+let tObs = {};
+corpo.addEventListener("input", (e) => {
+  const ta = e.target.closest(".obs-in"); if (!ta) return;
+  ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px";
+  clearTimeout(tObs[ta.dataset.k]);
+  tObs[ta.dataset.k] = setTimeout(async () => {
+    await gravar(ta.dataset.k, { obs: ta.value.trim() });
+    ta.classList.add("salvo"); setTimeout(() => ta.classList.remove("salvo"), 700);
+  }, 700);
+});
+
+/* ---------- controles ---------- */
+$("#busca").addEventListener("input", (e) => { busca = e.target.value; desenhar(); });
+$("#f-master").addEventListener("change", (e) => { fMaster = e.target.value; desenhar(); });
+$("#f-tipo").addEventListener("change", (e) => { fTipo = e.target.value; desenhar(); });
+document.querySelectorAll("[data-f]").forEach((b) => b.addEventListener("click", () => {
+  fAval = b.dataset.f;
+  document.querySelectorAll("[data-f]").forEach((x) => x.classList.toggle("active", x === b));
+  desenhar();
+}));
+$("#modo").addEventListener("click", () => {
+  verTodos = !verTodos;
+  $("#modo").classList.toggle("active", verTodos);
+  $("#modo").textContent = verTodos ? "✏️ Voltar a avaliar" : "👥 Ver avaliações de todos";
+  if (["p", "media"].includes(ordem.k)) ordem = { k: verTodos ? "media" : "p", dir: 1 };
+  desenhar();
+});
+$("#cab").addEventListener("click", (e) => {
+  const b = e.target.closest(".th-sort"); if (!b) return;
+  if (ordem.k !== b.dataset.k) ordem = { k: b.dataset.k, dir: 1 };
+  else if (ordem.dir > 0) ordem.dir = -1;
+  else ordem = { k: "", dir: 1 };
+  desenhar();
+});
+$("#csv").addEventListener("click", () => {
+  const pessoas = Object.entries(todos).filter(([, v]) => v?.nome);
+  const q = (s) => `"${String(s ?? "").replace(/"/g, '""')}"`;
+  const linhas = [["#", "Nome na fita", "Tipo", "Subtipo", "Local", "Master", "Duração", "Obs planilha", "Média",
+    ...pessoas.flatMap(([, v]) => [`${v.nome} — prioridade`, `${v.nome} — observação`])].map(q).join(",")];
+  for (const f of fitas) {
+    const md = media(f);
+    linhas.push([f.n, f.nome, f.tipo, f.subtipo, f.local, MASTER[f.master]?.[0] || "", f.duracao, f.obs,
+      md ? md.toFixed(1).replace(".", ",") : "",
+      ...pessoas.flatMap(([, v]) => [v.notas?.[f.k]?.p || "", v.notas?.[f.k]?.obs || ""])].map(q).join(","));
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["﻿" + linhas.join("\n")], { type: "text/csv;charset=utf-8" }));
+  a.download = "avaliacao_fitas.csv"; a.click();
+});
+
+/* ---------- início ---------- */
+eu = lerEu(); mostrarQuem();
+onValue(ref(db, RAIZ), (snap) => {
+  todos = snap.val() || {};
+  $("#sync").textContent = "✓ Sincronizado";
+  if (!$("#login").hidden) renderNomes();
+  if (!fitas.length) return;
+  // não redesenha enquanto a pessoa digita (evita perder o cursor)
+  if (verTodos || !corpo.contains(document.activeElement)) desenhar(); else progresso();
+}, () => { $("#sync").textContent = "⚠ Sem conexão"; });
+
+fitas = await carregarFitas();
+[...new Set(fitas.map((f) => f.tipo).filter(Boolean))].sort(comparaTxt)
+  .forEach((t) => $("#f-tipo").insertAdjacentHTML("beforeend", `<option value="${esc(t)}">${esc(t)}</option>`));
+desenhar();
+if (!eu) setTimeout(abrirLogin, 400);   // espera os nomes já cadastrados chegarem
+</script>
+</body>
+</html>

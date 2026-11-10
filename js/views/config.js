@@ -38,9 +38,6 @@ const CATEGORIAS = [
   { chave: "responsaveis", titulo: "Responsáveis", colorida: false, hint: "Demandas" },
   { chave: "locais", titulo: "Locais", colorida: false, hint: "Onde está a mídia" },
   { chave: "alfred", titulo: "ALFRED", colorida: false, hint: "Projetos" },
-  { chave: "tipoFita", titulo: "Tipos de fita", colorida: false, hint: "Fitas" },
-  { chave: "statusFita", titulo: "Status de fita", colorida: true, hint: "Fitas" },
-  { chave: "locaisFita", titulo: "Locais de fita", colorida: false, hint: "Fitas — local físico" },
 ];
 
 // estado de edição local (uma linha por vez em todo o sistema)

@@ -1617,3 +1617,29 @@ button.org-tab { background: none; cursor: pointer; font-family: inherit; }
   color: rgba(255, 255, 255, 0.92); white-space: pre-wrap;
   padding-left: 10px; border-left: 2px solid rgba(255, 255, 255, 0.45);
 }
+
+/* ---------- Fitas & outros ---------- */
+.title-complemento { font-size: 0.62em; opacity: 0.38; margin-left: 2px; }
+.nav-complemento { font-size: 0.82em; opacity: 0.45; margin-left: 3px; }
+.fitas-tabela-wrap { overflow-x: auto; }
+.fitas-tabela tbody tr { cursor: default; }
+.fitas-tabela td { padding: 6px 12px; font-size: 13px; }
+.fitas-tabela thead th { padding: 0; position: sticky; top: 0; z-index: 1; }
+.th-sort {
+  all: unset; box-sizing: border-box; display: block; width: 100%; padding: 10px 12px;
+  cursor: pointer; font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit;
+}
+.th-sort:hover, .th-sort.ativo { color: var(--text); }
+.th-sort:focus-visible { outline: 2px solid var(--accent, currentColor); outline-offset: -2px; }
+.fitas-tabela .col-f-local, .fitas-tabela .col-f-tipo, .fitas-tabela .col-f-sub,
+.fitas-tabela .col-f-dur { white-space: nowrap; width: 1%; color: var(--text-soft); }
+.fitas-tabela .col-f-master { width: 1%; }
+.fitas-tabela .col-f-nome { font-weight: 600; min-width: 200px; }
+.fitas-tabela .col-f-obs { color: var(--text-soft); font-size: 12px; min-width: 160px; }
+.master-sel {
+  font: inherit; font-size: 12px; padding: 2px 6px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text-soft); cursor: pointer;
+}
+.master-sel[data-v="s"] { color: var(--green, #2e7d52); border-color: currentColor; font-weight: 600; }
+.master-sel[data-v="n/s"] { color: var(--amber, #b7791f); border-color: currentColor; }
+.master-sel[data-v="n"] { color: var(--text-faint); }
