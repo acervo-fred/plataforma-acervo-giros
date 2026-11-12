@@ -59,6 +59,7 @@ td.nome{font-weight:600;min-width:220px}
 td.nome .meta{display:block;font-weight:400;color:var(--muted);font-size:.72rem;margin-top:2px}
 td.nome .pobs{display:block;font-weight:400;color:var(--soft);font-size:.72rem;margin-top:2px;font-style:italic}
 td.dur{white-space:nowrap;color:var(--soft);font-size:.78rem}
+.contab{display:inline-block;margin-left:6px;font-size:.66rem;font-weight:700;padding:1px 7px;border-radius:99px;background:var(--blue-light);color:var(--blue);vertical-align:middle;white-space:nowrap}
 .mst{display:inline-block;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}
 .mst.s{background:#dff1e6;color:var(--accent)}
 .mst.ns{background:#fdf0dc;color:var(--amber)}
@@ -197,7 +198,7 @@ const cls = (v) => (v <= 3 ? "low" : v <= 6 ? "mid" : "high");
 const comparaTxt = (a, b) => a.localeCompare(b, "pt", { numeric: true, sensitivity: "base" });
 const semPont = (v) => String(v).replace(/^[^\p{L}\p{N}]+/u, "");
 
-let fitas = [], todos = {}, eu = null;
+let fitas = [], todos = {}, eu = null, contab = {};   // contab: {fitaKey: {em, lista}} — só aparece pro Fred
 let busca = "", fMaster = "*", fTipo = "", fAval = "todas", verTodos = false, ordem = { k: "", dir: 1 };
 
 /* ---------- quem sou eu (sem senha) ---------- */
@@ -321,7 +322,7 @@ function linha(f) {
   const m = MASTER[f.master];
   const meta = [f.tipo, f.subtipo, f.local].filter(Boolean).join(" · ");
   const base = `<td class="num">${f.n}</td>
-    <td class="nome">${esc(f.nome)}<span class="meta">${esc(meta)}</span>${f.obs ? `<span class="pobs">${esc(f.obs)}</span>` : ""}</td>
+    <td class="nome">${esc(f.nome)}${ehFred() && contab[f.k] ? `<span class="contab" title="Já contabilizada na lista ${esc(contab[f.k].lista || "")} de ${esc(contab[f.k].em || "")}">✓ contabilizada</span>` : ""}<span class="meta">${esc(meta)}</span>${f.obs ? `<span class="pobs">${esc(f.obs)}</span>` : ""}</td>
     <td>${m ? `<span class="mst ${m[1]}">${m[0]}</span>` : ""}</td>
     <td class="dur">${esc(f.duracao)}</td>`;
   if (verTodos) {
@@ -434,6 +435,10 @@ $("#csv").addEventListener("click", () => {
 
 /* ---------- início ---------- */
 eu = lerEu(); mostrarQuem();
+onValue(ref(db, "acervo/fitas_contabilizadas"), (snap) => {
+  contab = snap.val() || {};
+  if (fitas.length && ehFred()) desenhar();
+});
 let primeiraCarga = true, recebeuNotas = false;
 onValue(ref(db, RAIZ), (snap) => {
   todos = snap.val() || {}; recebeuNotas = true;
