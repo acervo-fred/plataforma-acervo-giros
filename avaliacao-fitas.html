@@ -95,6 +95,15 @@ td.media{font-family:"DM Serif Display",serif;font-size:1.15rem;color:var(--acce
 
 /* entrada (login sem senha) */
 .login-bg[hidden]{display:none}
+.ed-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;font-size:.7rem;padding:1px 7px;margin-left:6px;vertical-align:middle}
+.ed-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+.editor .campos{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;margin-bottom:14px}
+.editor label{display:flex;flex-direction:column;gap:4px;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.editor label.cheio{grid-column:1/-1}
+.editor input,.editor select,.editor textarea{border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:.88rem;color:var(--text);text-transform:none;letter-spacing:0;outline:none;background:#fff}
+.editor input:focus,.editor select:focus,.editor textarea:focus{border-color:var(--accent)}
+.editor .acoes{display:flex;gap:8px;justify-content:flex-end;align-items:center}
+.editor .msg{flex:1;font-size:.78rem;color:var(--low)}
 .login-bg{position:fixed;inset:0;background:rgba(13,31,13,.72);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
 .login{background:var(--surface);border-radius:14px;padding:26px;max-width:420px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.3)}
 .login h2{font-family:"DM Serif Display",serif;font-weight:400;font-size:1.5rem;color:var(--accent);margin-bottom:6px}
@@ -164,6 +173,25 @@ td.media{font-family:"DM Serif Display",serif;font-size:1.15rem;color:var(--acce
   <div id="sync">⏳ Conectando…</div>
 </div>
 
+<div class="login-bg" id="editor" hidden>
+  <form class="login editor" id="ed-form" style="max-width:560px">
+    <h2>Editar fita <span id="ed-num" style="font-size:.9rem;color:var(--muted)"></span></h2>
+    <div class="campos">
+      <label class="cheio">Nome na fita<input name="nome" required></label>
+      <label>Tipo<input name="tipo" list="dl-tipo"></label>
+      <label>Subtipo<input name="subtipo" list="dl-sub"></label>
+      <label>Local<input name="local" list="dl-local"></label>
+      <label>Master<select name="master"><option value="">— (em branco)</option><option value="s">Master</option><option value="n/s">Talvez</option><option value="n">Não</option></select></label>
+      <label>Duração<input name="duracao"></label>
+      <label class="cheio">Obs<textarea name="obs" rows="3"></textarea></label>
+    </div>
+    <div class="acoes"><span class="msg" id="ed-msg"></span>
+      <button type="button" class="btn" id="ed-cancelar">Cancelar</button>
+      <button type="submit" class="ok" id="ed-salvar">Salvar</button></div>
+    <datalist id="dl-tipo"></datalist><datalist id="dl-sub"></datalist><datalist id="dl-local"></datalist>
+  </form>
+</div>
+
 <div class="login-bg" id="login" hidden>
   <div class="login">
     <h2>Quem está avaliando?</h2>
@@ -179,6 +207,8 @@ td.media{font-family:"DM Serif Display",serif;font-size:1.15rem;color:var(--acce
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const API_KEY = "AIzaSyC-0iuPs5xhvjjh2LmzoGjAKtAh6aY2-ZQ";
 const app = initializeApp({
@@ -186,6 +216,8 @@ const app = initializeApp({
   databaseURL: "https://giros-imagens-default-rtdb.firebaseio.com", projectId: "giros-imagens",
 });
 const db = getDatabase(app);
+const auth = getAuth(app);     // mesma sessão Google da Plataforma (mesmo site)
+const fdb = getFirestore(app); // fitas ficam em acervo_fitas (blocos b00…)
 const RAIZ = "acervo/fitas_avaliacao";   // {avaliadorId: {nome, notas: {fitaKey: {p, obs, ts}}}}
 
 const $ = (s) => document.querySelector(s);
@@ -322,7 +354,7 @@ function linha(f) {
   const m = MASTER[f.master];
   const meta = [f.tipo, f.subtipo, f.local].filter(Boolean).join(" · ");
   const base = `<td class="num">${f.n}</td>
-    <td class="nome">${esc(f.nome)}${ehFred() && contab[f.k] ? `<span class="contab" title="Já contabilizada na lista ${esc(contab[f.k].lista || "")} de ${esc(contab[f.k].em || "")}">✓ contabilizada</span>` : ""}<span class="meta">${esc(meta)}</span>${f.obs ? `<span class="pobs">${esc(f.obs)}</span>` : ""}</td>
+    <td class="nome">${esc(f.nome)}${ehFred() ? `<button class="ed-btn" data-ed="${f.k}" title="Editar informações da fita">✎ editar</button>` : ""}${ehFred() && contab[f.k] ? `<span class="contab" title="Já contabilizada na lista ${esc(contab[f.k].lista || "")} de ${esc(contab[f.k].em || "")}">✓ contabilizada</span>` : ""}<span class="meta">${esc(meta)}</span>${f.obs ? `<span class="pobs">${esc(f.obs)}</span>` : ""}</td>
     <td>${m ? `<span class="mst ${m[1]}">${m[0]}</span>` : ""}</td>
     <td class="dur">${esc(f.duracao)}</td>`;
   if (verTodos) {
@@ -363,6 +395,8 @@ function gravar(k, campos) {
 }
 const corpo = $("#corpo");
 corpo.addEventListener("click", (e) => {
+  const ed = e.target.closest("[data-ed]");
+  if (ed) return abrirEditor(fitas.find((x) => x.k === ed.dataset.ed));
   const b = e.target.closest(".dots button"); if (!b) return;
   const k = b.closest(".dots").dataset.k, v = +b.dataset.v;
   const atual = minha({ k }).p;
@@ -390,6 +424,57 @@ corpo.addEventListener("input", (e) => {
     await gravar(ta.dataset.k, { obs: ta.value.trim() });
     ta.classList.add("salvo"); setTimeout(() => ta.classList.remove("salvo"), 700);
   }, 700);
+});
+
+/* ---------- edição (só Fred; gravar exige login Google autorizado) ---------- */
+const CAMPOS = ["nome", "tipo", "subtipo", "local", "master", "duracao", "obs"];
+let editando = null;
+function opcoes(id, k) {
+  $(id).innerHTML = [...new Set(fitas.map((f) => f[k]).filter(Boolean))].sort(comparaTxt)
+    .map((v) => `<option value="${esc(v)}">`).join("");
+}
+function abrirEditor(f) {
+  if (!ehFred()) return;
+  editando = f;
+  opcoes("#dl-tipo", "tipo"); opcoes("#dl-sub", "subtipo"); opcoes("#dl-local", "local");
+  const form = $("#ed-form");
+  CAMPOS.forEach((c) => { form.elements[c].value = f[c] || ""; });
+  $("#ed-num").textContent = `#${f.n}`;
+  $("#ed-msg").textContent = "";
+  $("#editor").hidden = false;
+  form.elements.nome.focus();
+}
+$("#ed-cancelar").addEventListener("click", () => { $("#editor").hidden = true; editando = null; });
+$("#ed-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!editando || !ehFred()) return;
+  const form = e.target, novo = {};
+  CAMPOS.forEach((c) => { novo[c] = String(form.elements[c].value || "").trim(); });
+  if (!novo.nome) { $("#ed-msg").textContent = "Informe o nome na fita."; return; }
+  const btn = $("#ed-salvar"); btn.disabled = true; btn.textContent = "Salvando…";
+  try {
+    if (!auth.currentUser) {
+      $("#ed-msg").textContent = "Entre com sua conta Google para salvar…";
+      await signInWithPopup(auth, new GoogleAuthProvider());
+    }
+    const id = editando.id, bloco = id.split(":")[0];
+    await runTransaction(fdb, async (tx) => {
+      const r = doc(fdb, "acervo_fitas", bloco);
+      const snap = await tx.get(r);
+      if (!snap.exists()) throw new Error("bloco não encontrado");
+      const itens = snap.data().itens || [];
+      if (!itens.some((x) => x.id === id)) throw new Error("fita não encontrada");
+      tx.update(r, { itens: itens.map((x) => (x.id === id ? { ...x, ...novo, id } : x)) });
+    });
+    Object.assign(editando, novo);
+    $("#editor").hidden = true; editando = null;
+    desenhar();
+  } catch (err) {
+    const semPermissao = /permission|insufficient/i.test(err.code || err.message || "");
+    $("#ed-msg").textContent = semPermissao
+      ? `Sem permissão para editar com ${auth.currentUser?.email || "essa conta"}. Use a conta liberada na Plataforma.`
+      : (/popup/i.test(err.code || "") ? "Login cancelado." : "Não foi possível salvar: " + (err.message || err));
+  } finally { btn.disabled = false; btn.textContent = "Salvar"; }
 });
 
 /* ---------- controles ---------- */
