@@ -1621,7 +1621,8 @@ button.org-tab { background: none; cursor: pointer; font-family: inherit; }
 /* ---------- Fitas & outros ---------- */
 .title-complemento { font-size: 0.62em; opacity: 0.38; margin-left: 2px; }
 .nav-complemento { font-size: 0.82em; opacity: 0.45; margin-left: 3px; }
-.fitas-tabela-wrap { overflow-x: auto; }
+/* rolagem dentro do quadro: a barra horizontal fica sempre visível e o cabeçalho fixo */
+.fitas-tabela-wrap { overflow: auto; max-height: calc(100vh - 140px); }
 .fitas-tabela tbody tr { cursor: default; }
 .fitas-tabela td { padding: 6px 12px; font-size: 13px; }
 .fitas-tabela thead th { padding: 0; position: sticky; top: 0; z-index: 1; }
@@ -1631,11 +1632,13 @@ button.org-tab { background: none; cursor: pointer; font-family: inherit; }
 }
 .th-sort:hover, .th-sort.ativo { color: var(--text); }
 .th-sort:focus-visible { outline: 2px solid var(--accent, currentColor); outline-offset: -2px; }
-.fitas-tabela .col-f-local, .fitas-tabela .col-f-tipo, .fitas-tabela .col-f-sub,
+.fitas-tabela .col-f-tipo, .fitas-tabela .col-f-sub,
 .fitas-tabela .col-f-dur { white-space: nowrap; width: 1%; color: var(--text-soft); }
+.fitas-tabela .col-f-local { color: var(--text-soft); min-width: 110px; }
+.fitas-tabela td, .th-sort { padding-left: 8px; padding-right: 8px; }
 .fitas-tabela .col-f-master { width: 1%; }
-.fitas-tabela .col-f-nome { font-weight: 600; min-width: 200px; }
-.fitas-tabela .col-f-obs { color: var(--text-soft); font-size: 12px; min-width: 160px; }
+.fitas-tabela .col-f-nome { font-weight: 600; min-width: 180px; }
+.fitas-tabela .col-f-obs { color: var(--text-soft); font-size: 12px; min-width: 140px; }
 .master-sel {
   font: inherit; font-size: 12px; padding: 2px 6px; border-radius: 6px;
   border: 1px solid var(--border); background: var(--surface); color: var(--text-soft); cursor: pointer;
@@ -1643,3 +1646,8 @@ button.org-tab { background: none; cursor: pointer; font-family: inherit; }
 .master-sel[data-v="s"] { color: var(--green, #2e7d52); border-color: currentColor; font-weight: 600; }
 .master-sel[data-v="n/s"] { color: var(--amber, #b7791f); border-color: currentColor; }
 .master-sel[data-v="n"] { color: var(--text-faint); }
+.fitas-tabela .col-f-aval { width: 1%; white-space: nowrap; text-align: center; }
+.aval-ok { color: var(--green, #2e7d52); font-weight: 700; cursor: help; }
+.aval-p { font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 99px; border: 1px solid currentColor; margin-left: 2px; }
+.digi-sel[data-v="Em processo"] { color: var(--amber, #b7791f); border-color: currentColor; font-weight: 600; }
+.digi-sel[data-v="Digitalizada"] { color: var(--green, #2e7d52); border-color: currentColor; font-weight: 600; }

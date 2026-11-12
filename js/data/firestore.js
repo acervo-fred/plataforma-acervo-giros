@@ -43,12 +43,14 @@ function nomeProjetoOuGeral(projetoId, nomePorId) {
 /* ---------- fitas em blocos ---------- */
 const FITAS_POR_BLOCO = 400;
 const MASTER_VALORES = ["s", "n/s", "n", ""];
+const DIGI_VALORES = ["", "Em processo", "Digitalizada"];
 function camposFita(d) {
   const t = (v) => String(v ?? "").trim();
   return {
     local: t(d.local), tipo: t(d.tipo), subtipo: t(d.subtipo),
     master: MASTER_VALORES.includes(t(d.master)) ? t(d.master) : "",
     nome: t(d.nome), duracao: t(d.duracao), obs: t(d.obs),
+    digitalizacao: DIGI_VALORES.includes(t(d.digitalizacao)) ? t(d.digitalizacao) : "",
   };
 }
 async function mexerNoBloco(id, fn) {

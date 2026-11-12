@@ -411,6 +411,7 @@ const mockStore = {
     const novo = {
       id: novoId("ft"), local: t(dados.local), tipo: t(dados.tipo), subtipo: t(dados.subtipo),
       master: t(dados.master), nome: t(dados.nome), duracao: t(dados.duracao), obs: t(dados.obs),
+      digitalizacao: t(dados.digitalizacao),
     };
     db.fitas.push(novo);
     persistir();

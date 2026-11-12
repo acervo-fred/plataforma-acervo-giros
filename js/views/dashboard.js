@@ -60,8 +60,8 @@ export async function renderDashboard(app) {
 
   // ---- fitas ----
   const totalFitas = fitas.length;
-  const fitasDigitalizadas = fitas.filter((f) => f.statusFita === "Digitalizada").length;
-  const fitasEmProcesso = fitas.filter((f) => f.statusFita === "Em digitalização" || f.statusFita === "Aguardando digitalização").length;
+  const fitasDigitalizadas = fitas.filter((f) => f.digitalizacao === "Digitalizada").length;
+  const fitasEmProcesso = fitas.filter((f) => f.digitalizacao === "Em processo").length;
 
   // ---- pendências alta prioridade (abertas/andamento) ----
   const altaPrioridade = demandas.filter(

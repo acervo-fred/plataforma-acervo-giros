@@ -1,7 +1,9 @@
 /* Fitas & outros — inventário de mídias físicas (fitas, CDs, DATs…).
    Colunas iguais às da planilha de levantamento (sem "data" e "quem fez"):
    Local · Tipo · Subtipo · Master · Nome na fita · Duração · Obs.
-   Cabeçalhos clicáveis ordenam; Master é um menu suspenso na própria linha. */
+   + Avaliada (vem da página avaliacao-fitas.html, RTDB público, só leitura)
+   + Digitalização (menu: Em processo / Digitalizada — alimenta o Dashboard).
+   Cabeçalhos clicáveis ordenam; Master e Digitalização são menus na própria linha. */
 
 import { store } from "../data/store.js";
 import { esc, compararNomes, toast } from "../ui/dom.js";
@@ -14,12 +16,41 @@ export const MASTER_OPCOES = [
   { valor: "n", rotulo: "Não" },
 ];
 const MASTER_ORDEM = { s: 0, "n/s": 1, n: 2, "": 3 };
+export const DIGI_OPCOES = [
+  { valor: "", rotulo: "—" },
+  { valor: "Em processo", rotulo: "Em processo" },
+  { valor: "Digitalizada", rotulo: "Digitalizada" },
+];
+const DIGI_ORDEM = { "Em processo": 0, Digitalizada: 1 };
+
+// Avaliações feitas em avaliacao-fitas.html: {avaliador: {nome, notas: {chaveFita: {p, obs}}}}
+const AVALIACOES_URL = "https://giros-imagens-default-rtdb.firebaseio.com/acervo/fitas_avaliacao.json";
+const chaveAval = (id) => String(id).replace(/[.#$\[\]\/:]/g, "_");
+async function carregarAvaliacoes() {
+  try {
+    const r = await fetch(AVALIACOES_URL, { cache: "no-store" });
+    const todos = (await r.json()) || {};
+    const por = {};
+    for (const [pid, a] of Object.entries(todos)) {
+      for (const [k, n] of Object.entries(a?.notas || {})) {
+        if (!n || (!n.p && !n.obs)) continue;
+        (por[k] ||= []).push({ nome: a.nome || pid, p: n.p || 0, obs: n.obs || "" });
+      }
+    }
+    return por;
+  } catch (e) {
+    console.warn("Avaliações indisponíveis:", e);
+    return null;
+  }
+}
 
 const COLUNAS = [
   { k: "local", t: "Local" },
   { k: "tipo", t: "Tipo" },
   { k: "subtipo", t: "Subtipo" },
   { k: "master", t: "Master" },
+  { k: "avaliada", t: "Avaliada" },
+  { k: "digitalizacao", t: "Digitalização" },
   { k: "nome", t: "Nome na fita" },
   { k: "duracao", t: "Duração" },
   { k: "obs", t: "Obs" },
@@ -45,6 +76,8 @@ const semPontuacao = (v) => String(v).replace(/^[^\p{L}\p{N}]+/u, "");
 function valorOrdem(f, k) {
   if (k === "master") return f.master ? MASTER_ORDEM[f.master] : null;
   if (k === "duracao") return duracaoSegundos(f.duracao);
+  if (k === "avaliada") return f._aval ? -Math.max(...f._aval.map((a) => a.p)) : null;  // maior prioridade primeiro
+  if (k === "digitalizacao") return f.digitalizacao ? DIGI_ORDEM[f.digitalizacao] : null;
   return f[k] ? semPontuacao(f[k]) : null;
 }
 // vazios sempre no fim, em qualquer direção
@@ -55,9 +88,9 @@ function comparar(a, b, k, dir) {
 }
 
 export async function renderFitasLista(app) {
-  const fitas = await store.listFitas();
-  fitas.forEach((f, i) => { f._ordem = i; });
-  let busca = "", fTipo = "", fLocal = "", fMaster = "*";
+  const [fitas, avaliacoes] = await Promise.all([store.listFitas(), carregarAvaliacoes()]);
+  fitas.forEach((f, i) => { f._ordem = i; f._aval = avaliacoes?.[chaveAval(f.id)] || null; });
+  let busca = "", fTipo = "", fLocal = "", fMaster = "*", fAval = "", fDigi = "*";
   let ordem = { k: "", dir: 1 };
 
   const unicos = (k) => [...new Set(fitas.map((f) => f[k]).filter(Boolean))].sort(compararNomes);
@@ -78,7 +111,10 @@ export async function renderFitasLista(app) {
     <div class="meta-grid">
       ${metaCell("Total", fitas.length)}
       ${metaCell("Master", fitas.filter((f) => f.master === "s").length)}
-      ${principais.map(([t, n]) => metaCell(esc(t), n)).join("")}
+      ${metaCell("Avaliadas", avaliacoes ? fitas.filter((f) => f._aval).length : "—")}
+      ${metaCell("Em processo", fitas.filter((f) => f.digitalizacao === "Em processo").length)}
+      ${metaCell("Digitalizadas", fitas.filter((f) => f.digitalizacao === "Digitalizada").length)}
+      ${principais.slice(0, 3).map(([t, n]) => metaCell(esc(t), n)).join("")}
     </div>
     <div class="toolbar" style="margin-bottom:16px; gap:10px; flex-wrap:wrap">
       <input class="input" id="busca" type="search" placeholder="Buscar por nome, local ou obs…" style="flex:1;min-width:180px" />
@@ -88,6 +124,10 @@ export async function renderFitasLista(app) {
         ${locais.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("")}</select>
       <select class="input" id="f-master" style="width:auto"><option value="*">Master: todos</option>
         ${MASTER_OPCOES.map((o) => `<option value="${o.valor}">${o.valor ? o.rotulo : "Em branco"}</option>`).join("")}</select>
+      <select class="input" id="f-aval" style="width:auto"><option value="">Avaliação: todas</option>
+        <option value="s">Avaliadas</option><option value="n">Não avaliadas</option></select>
+      <select class="input" id="f-digi" style="width:auto"><option value="*">Digitalização: todas</option>
+        ${DIGI_OPCOES.map((o) => `<option value="${o.valor}">${o.valor ? o.rotulo : "Não enviada"}</option>`).join("")}</select>
       <span class="muted" id="qtd" style="font-size:13px"></span>
     </div>
     <div class="list-card fitas-tabela-wrap">
@@ -110,6 +150,8 @@ export async function renderFitasLista(app) {
       if (fTipo && f.tipo !== fTipo) return false;
       if (fLocal && f.local !== fLocal) return false;
       if (fMaster !== "*" && (f.master || "") !== fMaster) return false;
+      if (fAval && !!f._aval !== (fAval === "s")) return false;
+      if (fDigi !== "*" && (f.digitalizacao || "") !== fDigi) return false;
       if (t && ![f.nome, f.local, f.obs, f.tipo].some((v) => (v || "").toLowerCase().includes(t))) return false;
       return true;
     });
@@ -135,6 +177,8 @@ export async function renderFitasLista(app) {
   app.querySelector("#f-tipo").addEventListener("change", (e) => { fTipo = e.target.value; desenhar(); });
   app.querySelector("#f-local").addEventListener("change", (e) => { fLocal = e.target.value; desenhar(); });
   app.querySelector("#f-master").addEventListener("change", (e) => { fMaster = e.target.value; desenhar(); });
+  app.querySelector("#f-aval").addEventListener("change", (e) => { fAval = e.target.value; desenhar(); });
+  app.querySelector("#f-digi").addEventListener("change", (e) => { fDigi = e.target.value; desenhar(); });
   app.querySelector("thead").addEventListener("click", (e) => {
     const b = e.target.closest(".th-sort");
     if (!b) return;
@@ -146,15 +190,16 @@ export async function renderFitasLista(app) {
   });
   app.querySelector('[data-act="nova-fita"]').addEventListener("click", () => abrirNovaFita());
 
-  // Master direto na linha
+  // Master e Digitalização direto na linha
   corpo.addEventListener("change", async (e) => {
-    const sel = e.target.closest("select.master-sel");
+    const sel = e.target.closest("select.master-sel, select.digi-sel");
     if (!sel) return;
-    const f = porId[sel.dataset.id], antes = f.master || "";
+    const campo = sel.classList.contains("digi-sel") ? "digitalizacao" : "master";
+    const f = porId[sel.dataset.id], antes = f[campo] || "";
     sel.disabled = true;
     try {
-      await store.updateFita(f.id, { master: sel.value });
-      f.master = sel.value;
+      await store.updateFita(f.id, { [campo]: sel.value });
+      f[campo] = sel.value;
       sel.dataset.v = sel.value;
     } catch (err) {
       sel.value = antes;
@@ -183,12 +228,28 @@ function masterSelect(f) {
   </select>`;
 }
 
+function digiSelect(f) {
+  const v = f.digitalizacao || "";
+  return `<select class="master-sel digi-sel edit-only-inert" data-id="${esc(f.id)}" data-v="${esc(v)}" aria-label="Digitalização">
+    ${DIGI_OPCOES.map((o) => `<option value="${o.valor}" ${o.valor === v ? "selected" : ""}>${o.rotulo}</option>`).join("")}
+  </select>`;
+}
+
+function avalCelula(f) {
+  if (!f._aval) return "";
+  const max = Math.max(...f._aval.map((a) => a.p));
+  const dica = f._aval.map((a) => `${a.nome}: prioridade ${a.p || "—"}${a.obs ? " — " + a.obs : ""}`).join("\n");
+  return `<span class="aval-ok" title="${esc(dica)}">✓${max ? ` <span class="aval-p">${max}</span>` : ""}</span>`;
+}
+
 function linha(f) {
   return `<tr>
     <td class="col-f-local">${esc(f.local)}</td>
     <td class="col-f-tipo">${esc(f.tipo)}</td>
     <td class="col-f-sub">${esc(f.subtipo)}</td>
     <td class="col-f-master">${masterSelect(f)}</td>
+    <td class="col-f-aval">${avalCelula(f)}</td>
+    <td class="col-f-master">${digiSelect(f)}</td>
     <td class="col-f-nome">${esc(f.nome)}</td>
     <td class="col-f-dur">${esc(f.duracao)}</td>
     <td class="col-f-obs">${esc(f.obs)}</td>
