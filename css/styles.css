@@ -1632,13 +1632,15 @@ button.org-tab { background: none; cursor: pointer; font-family: inherit; }
 }
 .th-sort:hover, .th-sort.ativo { color: var(--text); }
 .th-sort:focus-visible { outline: 2px solid var(--accent, currentColor); outline-offset: -2px; }
-.fitas-tabela .col-f-tipo, .fitas-tabela .col-f-sub,
+.fitas-tabela .col-f-sub,
 .fitas-tabela .col-f-dur { white-space: nowrap; width: 1%; color: var(--text-soft); }
-.fitas-tabela .col-f-local { color: var(--text-soft); min-width: 110px; }
-.fitas-tabela td, .th-sort { padding-left: 8px; padding-right: 8px; }
+.fitas-tabela .col-f-tipo { width: 1%; color: var(--text-soft); }
+.fitas-tabela .col-f-local { color: var(--text-soft); min-width: 80px; }
+.fitas-tabela td, .th-sort { padding-left: 5px; padding-right: 5px; }
 .fitas-tabela .col-f-master { width: 1%; }
-.fitas-tabela .col-f-nome { font-weight: 600; min-width: 180px; }
-.fitas-tabela .col-f-obs { color: var(--text-soft); font-size: 12px; min-width: 140px; }
+.fitas-tabela .col-f-nome { font-weight: 600; min-width: 140px; overflow-wrap: anywhere; }
+/* Obs estreita: palavras longas (links, listas sem espaço) quebram em vez de alargar a tabela */
+.fitas-tabela .col-f-obs { color: var(--text-soft); font-size: 12px; min-width: 100px; overflow-wrap: anywhere; }
 .master-sel {
   font: inherit; font-size: 12px; padding: 2px 6px; border-radius: 6px;
   border: 1px solid var(--border); background: var(--surface); color: var(--text-soft); cursor: pointer;
