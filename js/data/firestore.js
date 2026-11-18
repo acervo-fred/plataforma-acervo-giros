@@ -9,7 +9,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs, getDocsFromServer,
-  addDoc, setDoc, updateDoc, deleteDoc, query, where, FieldPath, runTransaction,
+  addDoc, setDoc, updateDoc, deleteDoc, query, where, FieldPath, runTransaction, writeBatch,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import { firebaseConfig, COLLECTIONS } from "../config/firebase-config.js";
@@ -18,6 +18,21 @@ import { protocoloZerado, idsFolha } from "./protocolo-arquivamento.js";
 
 const app = initializeApp(firebaseConfig);
 const fdb = getFirestore(app);
+
+/* coleções que entram no backup: [chave no JSON, coleção] */
+const COLECOES_BACKUP = [
+  ["projetos", COLLECTIONS.projetos],
+  ["midias", COLLECTIONS.midias],
+  ["estrutura", COLLECTIONS.estrutura],
+  ["historico", COLLECTIONS.historico],
+  ["demandas", COLLECTIONS.demandas],
+  ["fitas", COLLECTIONS.fitas],
+  ["config", COLLECTIONS.config], // listas, organizacaoPrioridades, equipeObservacoes…
+  ["organizacaoGlossario", COLLECTIONS.organizacaoGlossario],
+  ["organizacaoMetadados", COLLECTIONS.organizacaoMetadados],
+  ["organizacaoProjetosFaltantes", COLLECTIONS.organizacaoProjetosFaltantes],
+  ["acessos", "acervo_authorizedEmails"],
+];
 
 /* ---------- helpers ---------- */
 async function allDocs(coll) {
@@ -394,31 +409,47 @@ export const firestoreStore = {
   async removeFita(id) { await mexerNoBloco(id, (itens) => itens.filter((f) => f.id !== id)); return true; },
   async removeDemanda(id) { await deleteDoc(doc(fdb, COLLECTIONS.demandas, id)); return true; },
 
-  /* ---------- BACKUP ---------- */
+  /* ---------- BACKUP ----------
+     Exporta TODAS as coleções do Acervo no Firestore (inclusive
+     Organização, config e Acessos). Import é "upsert": grava pelos
+     mesmos IDs e não apaga o que não estiver no arquivo. */
   async exportAll() {
-    const [projetos, midias, estrutura, historico, demandas, fitas, listas] = await Promise.all([
-      allDocs(COLLECTIONS.projetos), allDocs(COLLECTIONS.midias), allDocs(COLLECTIONS.estrutura),
-      allDocs(COLLECTIONS.historico), allDocs(COLLECTIONS.demandas), allDocs(COLLECTIONS.fitas),
-      this.getListas(),
-    ]);
-    return { projetos, midias, estrutura, historico, demandas, fitas, listas };
-  },
-  async importAll(data) {
-    const grava = async (chaveColl, itens) => {
-      if (!Array.isArray(itens)) return;
-      for (const item of itens) {
-        const { id, ...campos } = item;
-        const ref = id ? doc(fdb, chaveColl, id) : doc(collection(fdb, chaveColl));
-        await setDoc(ref, campos);
+    const pares = await Promise.all(COLECOES_BACKUP.map(async ([chave, coll]) => {
+      try { return [chave, await allDocs(coll)]; }
+      catch (e) {
+        // acessos só o admin lista — sem permissão, segue sem eles
+        if (chave === "acessos") return [chave, null];
+        throw e;
       }
+    }));
+    const dados = Object.fromEntries(pares.filter(([, v]) => v !== null));
+    return dados;
+  },
+  async importAll(data, aoProgredir = () => {}) {
+    // backups antigos (versão 1) traziam só o doc "listas", fora de "config"
+    if (!data.config && data.listas) data = { ...data, config: [{ id: "listas", ...data.listas }] };
+    const ops = [];
+    for (const [chave, coll] of COLECOES_BACKUP) {
+      if (!Array.isArray(data[chave])) continue;
+      for (const { id, ...campos } of data[chave]) {
+        ops.push({ ref: id ? doc(fdb, coll, id) : doc(collection(fdb, coll)), campos });
+      }
+    }
+    // lotes de até 400 gravações / ~4 MB (limites do Firestore: 500 / 10 MB)
+    let lote = writeBatch(fdb), n = 0, bytes = 0, feitos = 0;
+    const enviar = async () => {
+      if (!n) return;
+      await lote.commit();
+      feitos += n; aoProgredir(feitos, ops.length);
+      lote = writeBatch(fdb); n = 0; bytes = 0;
     };
-    await grava(COLLECTIONS.projetos, data.projetos);
-    await grava(COLLECTIONS.midias, data.midias);
-    await grava(COLLECTIONS.estrutura, data.estrutura);
-    await grava(COLLECTIONS.historico, data.historico);
-    await grava(COLLECTIONS.demandas, data.demandas);
-    await grava(COLLECTIONS.fitas, data.fitas);
-    if (data.listas) await setDoc(doc(fdb, COLLECTIONS.config, "listas"), data.listas);
+    for (const op of ops) {
+      const tam = JSON.stringify(op.campos).length;
+      if (n >= 400 || (n && bytes + tam > 4e6)) await enviar();
+      lote.set(op.ref, op.campos); n++; bytes += tam;
+    }
+    await enviar();
+    return feitos;
   },
 
   /* ATIVIDADE RECENTE */
